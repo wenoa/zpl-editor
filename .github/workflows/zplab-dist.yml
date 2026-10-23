@@ -1,41 +1,28 @@
 name: zplab dist
 
-# A new version in web-component/package.json, pushed to web-component, builds <zplab-editor> and
-# commits the package to the zplab-dist branch, tagged zplab-<version>. An app installs it with
-# "@wenoa/zplab": "github:wenoa/zpl-editor#zplab-<version>".
+# Every push to web-component that changes what goes into <zplab-editor> builds it into its own
+# branch, release/<short commit hash>. An app installs a build with
+# "@wenoa/zplab": "github:wenoa/zpl-editor#release/<short commit hash>".
 on:
   push:
     branches: [web-component]
-    paths: [web-component/package.json]
+    paths:
+      - src/**
+      - packages/**
+      - web-component/**
+      - vite.config.ts
+      - vite.element.config.ts
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig*.json
 
 permissions:
   contents: write
 
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      new: ${{ steps.version.outputs.new }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - id: version
-        run: |
-          version=$(node -p "require('./web-component/package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if git ls-remote --exit-code --tags origin "zplab-$version" > /dev/null; then
-            echo "new=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "new=true" >> "$GITHUB_OUTPUT"
-          fi
-
   dist:
-    needs: version
-    if: needs.version.outputs.new == 'true'
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -51,19 +38,17 @@ jobs:
       - run: pnpm exec vite build --config vite.element.config.ts
       - run: cp LICENSE web-component/
 
+      - working-directory: web-component
+        run: npm version "0.0.0-${GITHUB_SHA::7}" --no-git-tag-version
+
       - uses: fregante/setup-git-user@v2
 
-      - name: Commit the package to zplab-dist
+      - name: Commit the package to its release branch
         run: |
-          dist="$RUNNER_TEMP/zplab-dist"
-          if git fetch --depth=1 origin zplab-dist; then
-            git worktree add -B zplab-dist "$dist" FETCH_HEAD
-          else
-            git worktree add --orphan -b zplab-dist "$dist"
-          fi
-          git -C "$dist" rm -rq --ignore-unmatch .
+          branch="release/${GITHUB_SHA::7}"
+          dist="$RUNNER_TEMP/release"
+          git worktree add --orphan -b "$branch" "$dist"
           cp -R web-component/package.json web-component/index.d.ts web-component/LICENSE web-component/dist "$dist/"
           git -C "$dist" add -A
-          git -C "$dist" commit -qm "zplab $VERSION from $GITHUB_SHA"
-          git -C "$dist" tag "zplab-$VERSION"
-          git -C "$dist" push origin zplab-dist "zplab-$VERSION"
+          git -C "$dist" commit -qm "zplab from $GITHUB_SHA"
+          git -C "$dist" push origin "$branch"
