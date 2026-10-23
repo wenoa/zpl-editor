@@ -1,22 +1,41 @@
 name: zplab dist
 
-# Builds <zplab-editor> and commits the package to the zplab-dist branch, tagged
-# zplab-<version>. An app installs it with "@wenoa/zplab": "github:wenoa/ZPLab#zplab-<version>".
+# A new version in web-component/package.json, pushed to web-component, builds <zplab-editor> and
+# commits the package to the zplab-dist branch, tagged zplab-<version>. An app installs it with
+# "@wenoa/zplab": "github:wenoa/zpl-editor#zplab-<version>".
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Package version, e.g. 0.1.0
-        required: true
+  push:
+    branches: [web-component]
+    paths: [web-component/package.json]
 
 permissions:
   contents: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      new: ${{ steps.version.outputs.new }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: version
+        run: |
+          version=$(node -p "require('./web-component/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "zplab-$version" > /dev/null; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
   dist:
+    needs: version
+    if: needs.version.outputs.new == 'true'
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ inputs.version }}
+      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -32,13 +51,10 @@ jobs:
       - run: pnpm exec vite build --config vite.element.config.ts
       - run: cp LICENSE web-component/
 
-      - working-directory: web-component
-        run: npm version "$VERSION" --no-git-tag-version
+      - uses: fregante/setup-git-user@v2
 
       - name: Commit the package to zplab-dist
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           dist="$RUNNER_TEMP/zplab-dist"
           if git fetch --depth=1 origin zplab-dist; then
             git worktree add -B zplab-dist "$dist" FETCH_HEAD
