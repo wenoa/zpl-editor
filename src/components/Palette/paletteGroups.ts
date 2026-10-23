@@ -1,6 +1,7 @@
 import type { ObjectGroup } from '@zplab/core/types/LabelObject';
 import { addablesInGroup, typeLabelFor, type AddableEntry } from '../../registry/palettePresets';
-import type { LeafType } from '@zplab/core/registry';
+import { getEntry, type LeafType } from '@zplab/core/registry';
+import { isEmbedded } from '../../store/labelStore';
 import type { SymbologyTarget } from '../../lib/symbologySwitch';
 import type { Translations } from '../../locales';
 
@@ -12,6 +13,12 @@ export const PALETTE_GROUPS = [
   { key: 'legacy' as ObjectGroup, labelKey: 'groupLegacy' },
 ] as const;
 
+const BARCODE_GROUPS: ReadonlySet<ObjectGroup> = new Set(['code-1d', 'code-2d', 'legacy']);
+
+/** Code 128 is the only barcode <zplab-editor> offers. `id` names a preset of `type`. */
+export const offered = (type: string, id: string = type): boolean =>
+  !isEmbedded || id === 'code128' || !BARCODE_GROUPS.has(getEntry(type)?.group as ObjectGroup);
+
 /** Single source for the palette groups; each consumer maps entries onto its
  *  own shape (flat browse, canvas add-here, favorites add). */
 export function addableGroupsFor(
@@ -20,8 +27,8 @@ export function addableGroupsFor(
   return PALETTE_GROUPS.map((g) => ({
     key: g.key,
     label: t.palette[g.labelKey],
-    entries: addablesInGroup(g.key, t),
-  }));
+    entries: addablesInGroup(g.key, t).filter((e) => offered(e.type, e.id)),
+  })).filter((g) => g.entries.length > 0);
 }
 
 /** Symbology-switch targets grouped + labelled in palette order. Single source
@@ -35,7 +42,7 @@ export function symbologyGroupsFor(
     key: g.key,
     label: t.palette[g.labelKey],
     types: targets
-      .filter((s) => s.group === g.key)
+      .filter((s) => s.group === g.key && offered(s.type))
       .map((s) => ({
         type: s.type,
         label: typeLabelFor(s.type, t),

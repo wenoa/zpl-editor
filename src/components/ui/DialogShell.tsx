@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { popupLayer } from '../../lib/dom';
 
 /** Either `labelledBy` (preferred; id of the title element) or
  *  `describedBy` (id of the body element, for dialogs with no title)
@@ -62,5 +63,5 @@ export function DialogShell(props: Props) {
     </div>
   );
 
-  return portal ? createPortal(node, document.body) : node;
+  return portal ? createPortal(node, popupLayer()) : node;
 }

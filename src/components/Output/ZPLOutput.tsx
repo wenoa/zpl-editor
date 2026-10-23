@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { CheckIcon, ClipboardDocumentIcon, ChevronDownIcon, ChevronUpIcon, EyeIcon, PrinterIcon } from '@heroicons/react/16/solid';
-import { useLabelStore, selectEffectivePreviewProvider, selectPreviewLocksEditor } from '../../store/labelStore';
+import { useLabelStore, selectEffectivePreviewProvider, selectPreviewLocksEditor, isEmbedded } from '../../store/labelStore';
 import { useZplOutputView } from '../../hooks/useZplOutputView';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { finishZplExport } from '../../lib/exportZpl';
@@ -39,7 +39,7 @@ export function ZPLOutput({ collapsed, onCollapse, onExpand, onResizeMouseDown }
   const { copy, copied } = useCopyToClipboard(() => finishZplExport(shownText));
   const openOutput = useLabelStore((s) => s.openOutput);
 
-  const previewAvailable = effectiveProvider !== 'none';
+  const previewAvailable = effectiveProvider !== 'none' && !isEmbedded;
 
   const togglePreview = () => {
     if (previewActive) {
@@ -106,16 +106,18 @@ export function ZPLOutput({ collapsed, onCollapse, onExpand, onResizeMouseDown }
               </button>
             </Tooltip>
             {/* Otherwise the dialog is reachable only through the File menu. */}
-            <Tooltip content={t.zebraPrint.outputHeading}>
-              <button
-                onClick={() => openOutput('label')}
-                disabled={!shownText || session !== null}
-                className="flex items-center gap-1 font-mono text-[10px] text-muted hover:text-accent disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-              >
-                <PrinterIcon className="w-4 h-4" />
-                {t.zebraPrint.outputHeading}
-              </button>
-            </Tooltip>
+            {!isEmbedded && (
+              <Tooltip content={t.zebraPrint.outputHeading}>
+                <button
+                  onClick={() => openOutput('label')}
+                  disabled={!shownText || session !== null}
+                  className="flex items-center gap-1 font-mono text-[10px] text-muted hover:text-accent disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                >
+                  <PrinterIcon className="w-4 h-4" />
+                  {t.zebraPrint.outputHeading}
+                </button>
+              </Tooltip>
+            )}
           </div>
         </div>
 

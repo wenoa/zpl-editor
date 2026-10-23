@@ -39,7 +39,7 @@ import {
   MoonIcon,
   GlobeAltIcon,
 } from "@heroicons/react/16/solid";
-import { useLabelStore, useHistory, selectEffectivePreviewProvider, selectEditorFrozen, selectSourceEditing, selectSourceEditDirty, selectDocumentEmits } from "../store/labelStore";
+import { useLabelStore, useHistory, selectEffectivePreviewProvider, selectEditorFrozen, selectSourceEditing, selectSourceEditDirty, selectDocumentEmits, isEmbedded } from "../store/labelStore";
 import { datasetTimestamp } from "@zplab/core/types/DataSource";
 import { isCurrentDataContext, settleDatasetReplace } from "../store/datasetActions";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
@@ -68,6 +68,8 @@ import { useZplImportExport } from "../hooks/useZplImportExport";
 import { useOutputPanel, OUTPUT_DEFAULT_H } from "../hooks/useOutputPanel";
 import { useCollapsiblePanel } from "../hooks/useCollapsiblePanel";
 import { PaneToggle } from "./ui/PaneToggle";
+import { EmbedSaveButton, EmbedNotice } from "./EmbedSave";
+import { themeHolder } from "../lib/dom";
 
 /** Icons per menu item id, shared by both surfaces: the DOM dropdown renders
  *  them as components, the native menu rasterizes them (useNativeMenu). */
@@ -119,10 +121,10 @@ export function AppShell() {
     void checkForAppUpdate(false);
   }, [checkForAppUpdate]);
 
-  // Bridge the theme preference to <html data-theme> so the CSS variables in
+  // Bridge the theme preference to data-theme so the CSS variables in
   // index.css pick it up.
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    themeHolder().setAttribute('data-theme', theme);
   }, [theme]);
   const { undo, redo, pastStates, futureStates } = useHistory();
   const canvasSettings = useLabelStore((s) => s.canvasSettings);
@@ -234,7 +236,7 @@ export function AppShell() {
     quit: () => void quitApp(),
   };
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-bg text-text font-sans">
+    <div className={`flex flex-col ${isEmbedded ? "h-full" : "h-screen"} overflow-hidden bg-bg text-text font-sans`}>
       <SourceShadowSync />
       {/* Desktop: the menu model renders as the native OS menu; undo/redo and
           the history timeline ride its Edit menu plus the keyboard shortcuts,
@@ -264,95 +266,101 @@ export function AppShell() {
           </div>
 
           <div className="flex items-center gap-1">
-            <div className="w-px h-4 bg-border mx-1" />
+            {isEmbedded ? (
+              <EmbedSaveButton />
+            ) : (
+              <>
+                <div className="w-px h-4 bg-border mx-1" />
 
-            <Tooltip content={`${t.app.undo} (${kbd('Z')})`}>
-              <button
-                onClick={() => undo()}
-                disabled={!canUndo}
-                aria-label={t.app.undo}
-                className="p-1.5 rounded text-muted hover:text-text hover:bg-border disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-              >
-                <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
-              </button>
-            </Tooltip>
-            <Tooltip content={`${t.app.redo} (${kbd('Z', { shift: true })})`}>
-              <button
-                onClick={() => redo()}
-                disabled={!canRedo}
-                aria-label={t.app.redo}
-                className="p-1.5 rounded text-muted hover:text-text hover:bg-border disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-              >
-                <ArrowUturnRightIcon className="w-3.5 h-3.5" />
-              </button>
-            </Tooltip>
-            <HistoryDropdown />
+                <Tooltip content={`${t.app.undo} (${kbd('Z')})`}>
+                  <button
+                    onClick={() => undo()}
+                    disabled={!canUndo}
+                    aria-label={t.app.undo}
+                    className="p-1.5 rounded text-muted hover:text-text hover:bg-border disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+                <Tooltip content={`${t.app.redo} (${kbd('Z', { shift: true })})`}>
+                  <button
+                    onClick={() => redo()}
+                    disabled={!canRedo}
+                    aria-label={t.app.redo}
+                    className="p-1.5 rounded text-muted hover:text-text hover:bg-border disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ArrowUturnRightIcon className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+                <HistoryDropdown />
 
-            <div className="w-px h-4 bg-border mx-1" />
+                <div className="w-px h-4 bg-border mx-1" />
 
-            {/* Theme, language, GitHub: web-header power gestures, unchanged
-                from the pre-native-menu layout. Desktop has no header. */}
-            <Tooltip content={theme === "dark" ? t.app.themeLight : t.app.themeDark}>
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                aria-label={t.app.themeToggle}
-                className="p-1.5 rounded text-muted hover:text-text hover:bg-border transition-colors"
-              >
-                {theme === "dark" ? (
-                  <SunIcon className="w-3.5 h-3.5" />
-                ) : (
-                  <MoonIcon className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </Tooltip>
+                {/* Theme, language, GitHub: web-header power gestures, unchanged
+                    from the pre-native-menu layout. Desktop has no header. */}
+                <Tooltip content={theme === "dark" ? t.app.themeLight : t.app.themeDark}>
+                  <button
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    aria-label={t.app.themeToggle}
+                    className="p-1.5 rounded text-muted hover:text-text hover:bg-border transition-colors"
+                  >
+                    {theme === "dark" ? (
+                      <SunIcon className="w-3.5 h-3.5" />
+                    ) : (
+                      <MoonIcon className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </Tooltip>
 
-            <DropdownMenu
-              label={<GlobeAltIcon className="w-3.5 h-3.5" />}
-              ariaLabel={t.printerSettings.app.language}
-              maxHeight="260px"
-            >
-              {localeOptions().map(({ value, label }) => (
-                <DropdownItem
-                  key={value}
-                  onClick={() => setLocale(value)}
-                  shortcut={value === locale ? "✓" : undefined}
+                <DropdownMenu
+                  label={<GlobeAltIcon className="w-3.5 h-3.5" />}
+                  ariaLabel={t.printerSettings.app.language}
+                  maxHeight="260px"
                 >
-                  {label}
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-
-            <Tooltip content="GitHub">
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub"
-                className="p-1.5 rounded text-muted hover:text-text hover:bg-border transition-colors"
-              >
-                <GitHubIcon className="w-3.5 h-3.5" />
-              </a>
-            </Tooltip>
-
-            <div className="w-px h-4 bg-border mx-1" />
-
-            <DropdownMenu label={t.app.file}>
-              {menuModel.file.map((section, i) => (
-                <div key={i} className="contents">
-                  {i > 0 && <DropdownSeparator />}
-                  {section.map((item) => (
+                  {localeOptions().map(({ value, label }) => (
                     <DropdownItem
-                      key={item.id}
-                      icon={MENU_ICONS[item.id]}
-                      onClick={menuHandlers[item.id]}
-                      disabled={!item.enabled}
+                      key={value}
+                      onClick={() => setLocale(value)}
+                      shortcut={value === locale ? "✓" : undefined}
                     >
-                      {item.label}
+                      {label}
                     </DropdownItem>
                   ))}
-                </div>
-              ))}
-            </DropdownMenu>
+                </DropdownMenu>
+
+                <Tooltip content="GitHub">
+                  <a
+                    href={REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="GitHub"
+                    className="p-1.5 rounded text-muted hover:text-text hover:bg-border transition-colors"
+                  >
+                    <GitHubIcon className="w-3.5 h-3.5" />
+                  </a>
+                </Tooltip>
+
+                <div className="w-px h-4 bg-border mx-1" />
+
+                <DropdownMenu label={t.app.file}>
+                  {menuModel.file.map((section, i) => (
+                    <div key={i} className="contents">
+                      {i > 0 && <DropdownSeparator />}
+                      {section.map((item) => (
+                        <DropdownItem
+                          key={item.id}
+                          icon={MENU_ICONS[item.id]}
+                          onClick={menuHandlers[item.id]}
+                          disabled={!item.enabled}
+                        >
+                          {item.label}
+                        </DropdownItem>
+                      ))}
+                    </div>
+                  ))}
+                </DropdownMenu>
+              </>
+            )}
           </div>
         </header>
       )}
@@ -379,6 +387,7 @@ export function AppShell() {
       )}
 
       {/* Notices */}
+      {isEmbedded && <EmbedNotice />}
       {(appUpdate.phase === "available" || appUpdate.phase === "installing" || appUpdate.phase === "installed" || appUpdate.phase === "error") && (
         <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-accent-dim border-b border-border font-mono text-[10px] text-text">
           <span className="flex-1">

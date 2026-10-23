@@ -113,7 +113,8 @@
    initial theme from prefers-color-scheme on first load and persists the
    user's explicit choice afterwards, so an OS media-query fallback would
    only fight with the cached preference. */
-:root[data-theme="light"] {
+:root[data-theme="light"],
+:host([data-theme="light"]) {
   --color-bg:        #e4e4e7;
   --color-surface:   #fafafa;
   --color-surface-2: #f4f4f5;

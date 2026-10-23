@@ -9,7 +9,7 @@ import { LayersPanel } from '../Properties/LayersPanel';
 import { FontManager } from '../Fonts/FontManager';
 import { VariablesPanel } from '../Variables/VariablesPanel';
 import { useT } from '../../hooks/useT';
-import { useLabelStore, selectEditorFrozen } from '../../store/labelStore';
+import { useLabelStore, selectEditorFrozen, isEmbedded } from '../../store/labelStore';
 import type { SidebarTab } from '../../store/slices/uiSlice';
 import type { LabelCanvasHandle } from '../Canvas/LabelCanvas';
 import { AaIcon } from './AaIcon';
@@ -44,19 +44,22 @@ export function RightSidebar({ canvasRef, onCollapse }: Props) {
 
   // Ordering rule: selection scope first (Properties), then document-wide
   // concerns by usage frequency (Layers, Variables, Fonts).
-  const tabs: TabDef[] = [
+  const allTabs: TabDef[] = [
     { id: 'properties', label: t.layers.propertiesTab, Icon: AdjustmentsHorizontalIcon },
     { id: 'layers', label: t.layers.layersTab, Icon: RectangleStackIcon },
     { id: 'variables', label: t.layers.variablesTab, Icon: VariableIcon },
     { id: 'fonts', label: t.layers.fontsTab, Icon: AaIcon },
   ];
+  const tabs = isEmbedded ? allTabs.filter(({ id }) => id === 'properties' || id === 'variables') : allTabs;
+  // A canvas gesture may ask for a tab an embedded editor leaves out.
+  const shownTab = tabs.some(({ id }) => id === tab) ? tab : 'properties';
 
   return (
     <aside className="w-64 shrink-0 border-l border-border bg-surface flex flex-col">
       <div className="flex shrink-0 border-b border-border">
         <div className="flex flex-1" role="tablist">
           {tabs.map(({ id, label, Icon }) => {
-          const active = tab === id;
+          const active = shownTab === id;
           return (
             <Tooltip key={id} content={label} className="flex-1">
               <button
@@ -86,10 +89,10 @@ export function RightSidebar({ canvasRef, onCollapse }: Props) {
           let focus-scroll shift the whole app, leaving a grey strip below). */}
       <div className="relative flex-1 overflow-y-auto">
         <div inert={frozen} className={frozen ? 'opacity-50' : undefined}>
-          {tab === 'properties' && <PropertiesPanel canvasRef={canvasRef} />}
-          {tab === 'layers' && <LayersPanel />}
-          {tab === 'variables' && <VariablesPanel />}
-          {tab === 'fonts' && <FontManager />}
+          {shownTab === 'properties' && <PropertiesPanel canvasRef={canvasRef} />}
+          {shownTab === 'layers' && <LayersPanel />}
+          {shownTab === 'variables' && <VariablesPanel />}
+          {shownTab === 'fonts' && <FontManager />}
         </div>
       </div>
     </aside>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { activeElement } from '../lib/dom';
 
 /** Tab-able elements per the WAI-ARIA dialog pattern. The selector
  *  matches the standard set; `[tabindex="-1"]` is intentionally excluded
@@ -40,7 +41,7 @@ export function useFocusTrap(
 
   // Captured during render: a child's autoFocus lands in the commit phase, before any
   // effect runs, so an effect would remember the dialog's own button.
-  const [previouslyFocused] = useState(() => document.activeElement as HTMLElement | null);
+  const [previouslyFocused] = useState(() => activeElement() as HTMLElement | null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -51,7 +52,7 @@ export function useFocusTrap(
     // no focusable controls (e.g. a notice with only a button still
     // works; an unusual dialog with none would still capture Esc).
     const initial = focusableElements(container)[0] ?? container;
-    if (!container.contains(document.activeElement)) {
+    if (!container.contains(activeElement())) {
       initial.focus();
     }
 
@@ -70,7 +71,7 @@ export function useFocusTrap(
         e.preventDefault();
         return;
       }
-      const active = document.activeElement as HTMLElement | null;
+      const active = activeElement() as HTMLElement | null;
 
       if (e.shiftKey && active === first) {
         e.preventDefault();
@@ -92,7 +93,7 @@ export function useFocusTrap(
       // A close handler that already moved focus elsewhere must win, or the
       // restore re-blurs its target and can re-trigger blur handlers.
       // Contract: such handlers redirect SYNCHRONOUSLY, or they lose to this.
-      const active = document.activeElement;
+      const active = activeElement();
       if (active === null || active === document.body || container.contains(active)) {
         previouslyFocused?.focus?.();
       }

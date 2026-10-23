@@ -1,6 +1,6 @@
 import { useId, useState, type RefObject } from "react";
 import { Cog6ToothIcon, InformationCircleIcon, FolderPlusIcon } from "@heroicons/react/16/solid";
-import { useLabelStore, useCurrentObjects, currentPageLabel, selectEditorFrozen } from "../../store/labelStore";
+import { useLabelStore, useCurrentObjects, currentPageLabel, selectEditorFrozen, isEmbedded } from "../../store/labelStore";
 import type { LabelCanvasHandle } from "../Canvas/LabelCanvas";
 import type { AlignOp, DistributeAxis, AlignRef } from "../../lib/align";
 import type { AlignSelectionRef } from "../../store/slices/uiSlice";
@@ -538,34 +538,38 @@ function LabelConfigPanel({
         <StaticSectionCard
           title={t.label.formatSection}
           headerAction={
-            <Tooltip content={t.printerSettings.title}>
-              <button
-                type="button"
-                onClick={() => setPrinterSettingsTab("output")}
-                aria-label={t.printerSettings.title}
-                className="text-muted hover:text-text transition-colors"
-              >
-                <Cog6ToothIcon className="w-3.5 h-3.5" />
-              </button>
-            </Tooltip>
+            !isEmbedded && (
+              <Tooltip content={t.printerSettings.title}>
+                <button
+                  type="button"
+                  onClick={() => setPrinterSettingsTab("output")}
+                  aria-label={t.printerSettings.title}
+                  className="text-muted hover:text-text transition-colors"
+                >
+                  <Cog6ToothIcon className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
+            )
           }
         >
-        <div className="flex flex-col gap-1">
-          <label className={labelCls}>{t.label.preset}</label>
-          <Select<string>
-            value={presetValue}
-            disabled={locked}
-            onChange={handlePreset}
-            groups={[
-              {
-                options: [
-                  { value: "custom", label: t.label.presetCustom },
-                  ...PRESETS.map((p, i) => ({ value: String(i), label: p.label })),
-                ],
-              },
-            ]}
-          />
-        </div>
+        {!isEmbedded && (
+          <div className="flex flex-col gap-1">
+            <label className={labelCls}>{t.label.preset}</label>
+            <Select<string>
+              value={presetValue}
+              disabled={locked}
+              onChange={handlePreset}
+              groups={[
+                {
+                  options: [
+                    { value: "custom", label: t.label.presetCustom },
+                    ...PRESETS.map((p, i) => ({ value: String(i), label: p.label })),
+                  ],
+                },
+              ]}
+            />
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <span className={labelCls}>
@@ -611,145 +615,154 @@ function LabelConfigPanel({
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className={labelCls}>{t.label.dpmm}</label>
-          <Select<number>
-            value={label.dpmm}
-            // Every commit path is a no-op under the preview lock, so the
-            // control has to read as unavailable instead of silently dropping.
-            disabled={locked}
-            onChange={(value) => {
-              if (value !== label.dpmm && wouldRescale({ dpmm: value }, false)) setPendingDpmm({ toDpmm: value });
-              else onUpdate({ dpmm: value });
-            }}
-            groups={[
-              {
-                options: [
-                  { value: 6, label: t.label.dpmm6 },
-                  { value: 8, label: t.label.dpmm8 },
-                  { value: 12, label: t.label.dpmm12 },
-                  { value: 24, label: t.label.dpmm24 },
-                ],
-              },
-            ]}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <FieldLabel cmd="^JM">{t.label.jmDensity}</FieldLabel>
-          <Select<string>
-            value={label.jmDensity ?? ''}
-            disabled={locked}
-            onChange={(v) => {
-              const next = v === '' ? undefined : (v as JmDensity);
-              if (wouldRescale({ jmDensity: next }, true)) setPendingJm({ to: next });
-              else onUpdate({ jmDensity: next });
-            }}
-            groups={[
-              {
-                options: [
-                  { value: '', label: t.label.jmDensityDefault },
-                  { value: 'A', label: t.label.jmDensityA },
-                  { value: 'B', label: t.label.jmDensityB },
-                ],
-              },
-            ]}
-          />
-          {pageJm !== label.jmDensity && (
-            <p className="text-[10px] text-muted leading-snug">
-              {t.label.jmPageOverrideHintFmt.split('{mode}').join(pageJm ?? 'A')}
-            </p>
-          )}
-        </div>
-        {pendingDpmm !== null && (
-          <DensityRescaleModal
-            pending={{ kind: 'dpmm', toDpmm: pendingDpmm.toDpmm, configPatch: pendingDpmm.configPatch }}
-            onClose={() => setPendingDpmm(null)}
-          />
-        )}
-        {pendingJm !== null && (
-          <DensityRescaleModal pending={{ kind: 'jm', toJm: pendingJm.to }} onClose={() => setPendingJm(null)} />
-        )}
+        {/* Every label made in an embedded editor prints at 300 dpi with the printer's defaults. */}
+        {!isEmbedded && (
+          <>
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>{t.label.dpmm}</label>
+              <Select<number>
+                value={label.dpmm}
+                // Every commit path is a no-op under the preview lock, so the
+                // control has to read as unavailable instead of silently dropping.
+                disabled={locked}
+                onChange={(value) => {
+                  if (value !== label.dpmm && wouldRescale({ dpmm: value }, false)) setPendingDpmm({ toDpmm: value });
+                  else onUpdate({ dpmm: value });
+                }}
+                groups={[
+                  {
+                    options: [
+                      { value: 6, label: t.label.dpmm6 },
+                      { value: 8, label: t.label.dpmm8 },
+                      { value: 12, label: t.label.dpmm12 },
+                      { value: 24, label: t.label.dpmm24 },
+                    ],
+                  },
+                ]}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <FieldLabel cmd="^JM">{t.label.jmDensity}</FieldLabel>
+              <Select<string>
+                value={label.jmDensity ?? ''}
+                disabled={locked}
+                onChange={(v) => {
+                  const next = v === '' ? undefined : (v as JmDensity);
+                  if (wouldRescale({ jmDensity: next }, true)) setPendingJm({ to: next });
+                  else onUpdate({ jmDensity: next });
+                }}
+                groups={[
+                  {
+                    options: [
+                      { value: '', label: t.label.jmDensityDefault },
+                      { value: 'A', label: t.label.jmDensityA },
+                      { value: 'B', label: t.label.jmDensityB },
+                    ],
+                  },
+                ]}
+              />
+              {pageJm !== label.jmDensity && (
+                <p className="text-[10px] text-muted leading-snug">
+                  {t.label.jmPageOverrideHintFmt.split('{mode}').join(pageJm ?? 'A')}
+                </p>
+              )}
+            </div>
+            {pendingDpmm !== null && (
+              <DensityRescaleModal
+                pending={{ kind: 'dpmm', toDpmm: pendingDpmm.toDpmm, configPatch: pendingDpmm.configPatch }}
+                onClose={() => setPendingDpmm(null)}
+              />
+            )}
+            {pendingJm !== null && (
+              <DensityRescaleModal pending={{ kind: 'jm', toJm: pendingJm.to }} onClose={() => setPendingJm(null)} />
+            )}
 
-        <div className="flex flex-col gap-1">
-          <label className={labelCls}>
-            {t.label.safeArea}
-            <Tooltip content={t.label.safeAreaHint}>
-              <InformationCircleIcon className="w-3.5 h-3.5 ml-1 inline-block align-text-bottom text-muted cursor-help" />
-            </Tooltip>
-          </label>
-          <input
-            type="number"
-            className={inputCls}
-            value={
-              label.safeAreaMm === undefined ? "" : mmToUnit(label.safeAreaMm, unit)
-            }
-            min={0}
-            step={unitStep(unit)}
-            onChange={(e) => {
-              const raw = e.target.value.trim();
-              const mm = raw === "" ? undefined : unitToMm(Number(raw), unit);
-              onUpdate({ safeAreaMm: mm !== undefined && mm > 0 ? mm : undefined });
-            }}
-          />
-        </div>
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>
+                {t.label.safeArea}
+                <Tooltip content={t.label.safeAreaHint}>
+                  <InformationCircleIcon className="w-3.5 h-3.5 ml-1 inline-block align-text-bottom text-muted cursor-help" />
+                </Tooltip>
+              </label>
+              <input
+                type="number"
+                className={inputCls}
+                value={
+                  label.safeAreaMm === undefined ? "" : mmToUnit(label.safeAreaMm, unit)
+                }
+                min={0}
+                step={unitStep(unit)}
+                onChange={(e) => {
+                  const raw = e.target.value.trim();
+                  const mm = raw === "" ? undefined : unitToMm(Number(raw), unit);
+                  onUpdate({ safeAreaMm: mm !== undefined && mm > 0 ? mm : undefined });
+                }}
+              />
+            </div>
 
-        <label className="flex items-start gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            className="mt-0.5 accent-accent"
-            checked={label.emit1dZJustify ?? false}
-            onChange={(e) => onUpdate({ emit1dZJustify: e.target.checked || undefined })}
-          />
-          <span className={labelCls}>
-            {t.label.emitZJustify}
-            <Tooltip content={t.label.emitZJustifyHint}>
-              <InformationCircleIcon className="w-3.5 h-3.5 ml-1 inline-block align-text-bottom text-muted cursor-help" />
-            </Tooltip>
-          </span>
-        </label>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-accent"
+                checked={label.emit1dZJustify ?? false}
+                onChange={(e) => onUpdate({ emit1dZJustify: e.target.checked || undefined })}
+              />
+              <span className={labelCls}>
+                {t.label.emitZJustify}
+                <Tooltip content={t.label.emitZJustifyHint}>
+                  <InformationCircleIcon className="w-3.5 h-3.5 ml-1 inline-block align-text-bottom text-muted cursor-help" />
+                </Tooltip>
+              </span>
+            </label>
+          </>
+        )}
         </StaticSectionCard>
 
-        <TemplateSection locked={locked} />
+        {!isEmbedded && (
+          <>
+            <TemplateSection locked={locked} />
 
-        <SectionCard
-          id="label-fonts"
-          title={t.label.defaultFont}
-          defaultOpen={false}
-        >
-        <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <FieldLabel cmd="^CF">{t.label.defaultFontId}</FieldLabel>
-          <Select
-            aria-label={t.label.defaultFontId}
-            value={label.defaultFontId ?? ""}
-            groups={fontGroups}
-            onChange={(v) => onUpdate({ defaultFontId: v || undefined })}
-          />
-        </div>
-        <div className={`grid grid-cols-2 ${fieldGridCols}`}>
-          <UnitNumberInput
-            label={t.label.defaultFontHeight}
-            valueDots={label.defaultFontHeight}
-            minDots={1}
-            allowUnset
-            onChangeDots={(defaultFontHeight) => onUpdate({ defaultFontHeight })}
-            scope="design"
-            zplCmd="^CF"
-            className={fieldGridCell}
-          />
-          <UnitNumberInput
-            label={t.label.defaultFontWidth}
-            valueDots={label.defaultFontWidth}
-            minDots={0}
-            allowUnset
-            onChangeDots={(defaultFontWidth) => onUpdate({ defaultFontWidth })}
-            scope="design"
-            zplCmd="^CF"
-            className={fieldGridCell}
-          />
-        </div>
-        </div>
-        </SectionCard>
+            <SectionCard
+              id="label-fonts"
+              title={t.label.defaultFont}
+              defaultOpen={false}
+            >
+            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <FieldLabel cmd="^CF">{t.label.defaultFontId}</FieldLabel>
+              <Select
+                aria-label={t.label.defaultFontId}
+                value={label.defaultFontId ?? ""}
+                groups={fontGroups}
+                onChange={(v) => onUpdate({ defaultFontId: v || undefined })}
+              />
+            </div>
+            <div className={`grid grid-cols-2 ${fieldGridCols}`}>
+              <UnitNumberInput
+                label={t.label.defaultFontHeight}
+                valueDots={label.defaultFontHeight}
+                minDots={1}
+                allowUnset
+                onChangeDots={(defaultFontHeight) => onUpdate({ defaultFontHeight })}
+                scope="design"
+                zplCmd="^CF"
+                className={fieldGridCell}
+              />
+              <UnitNumberInput
+                label={t.label.defaultFontWidth}
+                valueDots={label.defaultFontWidth}
+                minDots={0}
+                allowUnset
+                onChangeDots={(defaultFontWidth) => onUpdate({ defaultFontWidth })}
+                scope="design"
+                zplCmd="^CF"
+                className={fieldGridCell}
+              />
+            </div>
+            </div>
+            </SectionCard>
+          </>
+        )}
       </div>
     </div>
   );
