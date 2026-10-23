@@ -1,0 +1,14 @@
+{
+  "name": "@wenoa/zplab",
+  "version": "0.0.0",
+  "description": "ZPLab's ZPL label editor as the <zplab-editor> web component",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/wenoa/ZPLab.git" },
+  "type": "module",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./dist/zplab.js" }
+  },
+  "types": "./index.d.ts",
+  "files": ["dist", "index.d.ts", "LICENSE"],
+  "sideEffects": true
+}
