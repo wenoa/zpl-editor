@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRightIcon } from "@heroicons/react/16/solid";
 import { useDismiss } from "../../hooks/useDismiss";
+import { popupLayer } from "../../lib/dom";
 
 /** One context-menu entry. `labelKey` resolves against the caller's `labels`
  *  map; a raw `label` overrides it (dynamic entries). A `submenu` makes it a
@@ -245,6 +246,6 @@ export function ContextMenu({ sections, x, y, labels, iconFor, onClose, containe
         </div>
       ))}
     </div>,
-    container ?? document.body,
+    container ?? popupLayer(),
   );
 }

@@ -11,7 +11,7 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/16/solid';
-import { useLabelStore, selectEditorFrozen, currentPageLabel } from '../../store/labelStore';
+import { useLabelStore, selectEditorFrozen, currentPageLabel, isEmbedded } from '../../store/labelStore';
 import { formatDelivery } from '@zplab/core/lib/storedFormat';
 import { datasetDisplayName, dbRefDisplayName } from '@zplab/core/types/DataSource';
 import { currentDataContext, isCurrentDataContext } from '../../store/datasetActions';
@@ -179,14 +179,16 @@ export function VariablesPanel() {
         <div className="flex items-start justify-between gap-2">
           {/* Persistent entry: the empty-state CTA is gone once variables exist,
               but connecting data is exactly then most useful. */}
-          <button
-            onClick={openConnectWizard}
-            disabled={editorFrozen}
-            className="shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted hover:text-text hover:bg-surface-2 border border-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <TableCellsIcon className="w-3 h-3" />
-            {tv.connectData}
-          </button>
+          {!isEmbedded && (
+            <button
+              onClick={openConnectWizard}
+              disabled={editorFrozen}
+              className="shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted hover:text-text hover:bg-surface-2 border border-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <TableCellsIcon className="w-3 h-3" />
+              {tv.connectData}
+            </button>
+          )}
           <Tooltip
             content={
               dataRenderMode === 'preview'
@@ -359,14 +361,16 @@ export function VariablesPanel() {
       {variables.length === 0 ? (
         <div className="flex flex-col gap-2">
           <p className="font-mono text-[10px] text-muted italic">{tv.empty}</p>
-          <button
-            onClick={openConnectWizard}
-            disabled={editorFrozen}
-            className="self-start mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-mono bg-accent text-bg hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
-          >
-            <TableCellsIcon className="w-3.5 h-3.5" />
-            {tv.connectData}
-          </button>
+          {!isEmbedded && (
+            <button
+              onClick={openConnectWizard}
+              disabled={editorFrozen}
+              className="self-start mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-mono bg-accent text-bg hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+            >
+              <TableCellsIcon className="w-3.5 h-3.5" />
+              {tv.connectData}
+            </button>
+          )}
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -414,14 +418,16 @@ export function VariablesPanel() {
       )}
 
       <div className="flex items-center gap-1.5">
-        <button
-          onClick={handleAdd}
-          disabled={allSlotsTaken || editorFrozen}
-          className="flex items-center gap-1.5 px-2 py-1.5 rounded text-xs font-mono border border-dashed border-border text-muted hover:text-text hover:border-border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <PlusIcon className="w-3.5 h-3.5" />
-          {tv.add}
-        </button>
+        {!isEmbedded && (
+          <button
+            onClick={handleAdd}
+            disabled={allSlotsTaken || editorFrozen}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded text-xs font-mono border border-dashed border-border text-muted hover:text-text hover:border-border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <PlusIcon className="w-3.5 h-3.5" />
+            {tv.add}
+          </button>
+        )}
         <Tooltip content={tv.panelHint}>
           <button type="button" aria-label={tv.panelHint} className="shrink-0 text-muted/60 hover:text-text cursor-help">
             <InformationCircleIcon className="w-3.5 h-3.5" aria-hidden="true" />
@@ -566,7 +572,8 @@ function VariableRow({
           // beats `text-text` from inputCls (same specificity, later in sheet).
           className={`${inputCls} flex-1 min-w-0 ${bindings === 0 ? "text-muted!" : "text-indigo!"}`}
           aria-label={tv.nameLabel}
-          disabled={disabled}
+          // The application fills its variables by name.
+          disabled={disabled || isEmbedded}
           value={name}
           onChange={(e: ChangeEvent<HTMLInputElement>) => {
             setName(e.target.value);
@@ -595,14 +602,16 @@ function VariableRow({
             />
           </div>
         )}
-        <button
-          onClick={onRequestDelete}
-          disabled={disabled}
-          aria-label={tv.removeAriaFmt.replace('{name}', variable.name)}
-          className="p-1.5 rounded text-muted hover:text-amber-400 hover:bg-surface-2 transition-colors shrink-0"
-        >
-          <TrashIcon className="w-3.5 h-3.5" />
-        </button>
+        {!isEmbedded && (
+          <button
+            onClick={onRequestDelete}
+            disabled={disabled}
+            aria-label={tv.removeAriaFmt.replace('{name}', variable.name)}
+            className="p-1.5 rounded text-muted hover:text-amber-400 hover:bg-surface-2 transition-colors shrink-0"
+          >
+            <TrashIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
       <input
         className={inputCls}

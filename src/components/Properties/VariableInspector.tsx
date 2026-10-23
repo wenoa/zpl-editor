@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowTopRightOnSquareIcon, LockClosedIcon, TrashIcon } from "@heroicons/react/16/solid";
 import { useT } from "../../hooks/useT";
 import { controlKeyFromBody } from "@zplab/core/types/controlKey";
-import { useLabelStore } from "../../store/labelStore";
+import { useLabelStore, isEmbedded } from "../../store/labelStore";
 import { channelDatesFrom, resolveClockMarkers } from "@zplab/core/lib/fcTemplate";
 import { isValidVariableName, markerOf } from "@zplab/core/types/Variable";
 import type { SelectedMarker } from "./TemplateContentInput";
@@ -141,6 +141,7 @@ function VariableState({
         <input
           className={`${INPUT} text-indigo!`}
           aria-label={t.variables.nameLabel}
+          disabled={isEmbedded}
           value={nameDraft}
           onChange={(e) => { setNameDraft(e.target.value); setNameError(false); }}
           onBlur={commitName}

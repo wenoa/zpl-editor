@@ -9,6 +9,7 @@ import {
 import { flushSync } from "react-dom";
 import { useT } from "../../hooks/useT";
 import { useLabelStore } from "../../store/labelStore";
+import { activeElement, selectionAt } from "../../lib/dom";
 import { formatClockLabel } from "@zplab/core/lib/fcTemplate";
 import {
   classifyMarkerBody,
@@ -44,7 +45,7 @@ export interface TemplateEditorHandle {
 /** Caret offset within `editor`, or null when selection isn't inside it. */
 function caretOffsetIn(
   editor: HTMLElement,
-  sel: Selection | null,
+  sel: ReturnType<typeof selectionAt>,
   which: "anchor" | "focus" = "anchor",
 ): number | null {
   if (!sel || sel.rangeCount === 0) return null;
@@ -205,23 +206,20 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
     const variableNames = new Set(variables.map((v: Variable) => v.name));
     const segments = tokeniseMarkers(value, variableNames);
 
+    // setBaseAndExtent rather than addRange: Safari and Firefox ignore a range
+    // inside a shadow root (<zplab-editor>), since its root is not the document.
     const restoreCaret = (offset: number) => {
       const editor = editorRef.current;
       if (!editor) return;
       editor.focus();
       const pos = findCaretPosition(editor, offset);
-      const range = document.createRange();
-      range.setStart(pos.node, pos.offset);
-      range.collapse(true);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      window.getSelection()?.setBaseAndExtent(pos.node, pos.offset, pos.node, pos.offset);
     };
 
     const insertMarker = (markerBody: string) => {
       const marker = markerOf(markerBody);
       const editor = editorRef.current;
-      const sel = editor ? caretOffsetIn(editor, window.getSelection()) : null;
+      const sel = editor ? caretOffsetIn(editor, selectionAt(editor)) : null;
       const at = sel ?? lastCaretRef.current ?? value.length;
       const next = value.slice(0, at) + marker + value.slice(at);
       // Length-inheritance gate (same rule as paste): a token counts at its
@@ -259,18 +257,11 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
       const currentText = domToPlainText(editor);
       const desired = segmentsToHTML(segments, deco);
       if (currentText === value && editor.innerHTML === desired) return;
-      const caretOffset = caretOffsetIn(editor, window.getSelection());
+      const caretOffset = caretOffsetIn(editor, selectionAt(editor));
       editor.innerHTML = desired;
-      if (caretOffset !== null && document.activeElement === editor) {
-        const selAfter = window.getSelection();
-        if (selAfter) {
-          const pos = findCaretPosition(editor, caretOffset);
-          const range = document.createRange();
-          range.setStart(pos.node, pos.offset);
-          range.collapse(true);
-          selAfter.removeAllRanges();
-          selAfter.addRange(range);
-        }
+      if (caretOffset !== null && activeElement() === editor) {
+        const pos = findCaretPosition(editor, caretOffset);
+        window.getSelection()?.setBaseAndExtent(pos.node, pos.offset, pos.node, pos.offset);
       }
     }, [value, segments, showZpl, variables, t, resyncNonce, selectedIndex]);
 
@@ -279,19 +270,15 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
       if (!editorFocusRequest || editorFocusRequest.id !== objectId) return;
       const editor = editorRef.current;
       if (!editor) return;
-      if (document.activeElement === editor) return;
+      if (activeElement() === editor) return;
       editor.focus();
-      const range = document.createRange();
-      range.selectNodeContents(editor);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      window.getSelection()?.setBaseAndExtent(editor, 0, editor, editor.childNodes.length);
     }, [editorFocusRequest, objectId]);
 
     const rememberCaret = () => {
       const editor = editorRef.current;
       if (!editor) return;
-      const off = caretOffsetIn(editor, window.getSelection());
+      const off = caretOffsetIn(editor, selectionAt(editor));
       if (off !== null) lastCaretRef.current = off;
     };
 
@@ -312,7 +299,7 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
         lastCaretRef.current = nextCaret;
       };
       const selectionRange = (fallbackLen: number) => {
-        const sel = window.getSelection();
+        const sel = selectionAt(editor);
         const start = caretOffsetIn(editor, sel, "anchor") ?? fallbackLen;
         const end = caretOffsetIn(editor, sel, "focus") ?? start;
         return { lo: Math.min(start, end), hi: Math.max(start, end) };
@@ -320,7 +307,7 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
       /** Delete the whole `«...»` marker atomically rather than eroding mid-token. */
       const handleAtomicDelete = (direction: "backspace" | "delete") => {
         const { value } = stateRef.current;
-        const sel = window.getSelection();
+        const sel = selectionAt(editor);
         if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false;
         const caret = caretOffsetIn(editor, sel);
         if (caret === null) return false;
@@ -486,7 +473,7 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
           (e.key === "ArrowLeft" || e.key === "ArrowRight") &&
           !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey
         ) {
-          const sel = window.getSelection();
+          const sel = selectionAt(editor);
           if (!sel?.isCollapsed) return;
           const caret = caretOffsetIn(editor, sel);
           if (caret === null) return;
@@ -532,17 +519,12 @@ export const TemplateContentInput = forwardRef<TemplateEditorHandle, Props>(
     const onDoubleClick = () => {
       const editor = editorRef.current;
       if (!editor) return;
-      const caret = caretOffsetIn(editor, window.getSelection()) ?? value.length;
+      const caret = caretOffsetIn(editor, selectionAt(editor)) ?? value.length;
       const m = findMarkerContaining(value, caret);
       if (!m) return;
       const startPos = findCaretPosition(editor, m.start);
       const endPos = findCaretPosition(editor, m.end);
-      const range = document.createRange();
-      range.setStart(startPos.node, startPos.offset);
-      range.setEnd(endPos.node, endPos.offset);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      window.getSelection()?.setBaseAndExtent(startPos.node, startPos.offset, endPos.node, endPos.offset);
     };
 
     const isEmpty = value.length === 0;

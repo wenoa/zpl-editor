@@ -3,6 +3,7 @@ import type { AriaRole, ReactElement, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useAnchoredPosition } from "../../hooks/useAnchoredPosition";
 import { resolveTooltipPosition } from "../../lib/tooltipPosition";
+import { popupLayer } from "../../lib/dom";
 
 interface TooltipProps {
   /** Hover/focus hint. Falsy renders the child untouched (no wrapper). */
@@ -94,7 +95,7 @@ export function Tooltip({ content, children, placement = "top", delayMs = 120, c
           >
             {content}
           </div>,
-          document.body,
+          popupLayer(),
         )}
     </span>
   );

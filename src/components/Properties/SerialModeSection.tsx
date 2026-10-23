@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useT } from "../../hooks/useT";
 import { useLabelStore } from "../../store/labelStore";
+import { activeElement } from "../../lib/dom";
 import { usePreviewBinding } from "../../store/usePreviewBinding";
 import { CheckboxRow } from "./CheckboxRow";
 import { NumberInput } from "./NumberInput";
@@ -66,7 +67,7 @@ export function SerialParts({ obj, onChange }: Props) {
   useEffect(() => {
     if (editorFocusRequest?.id !== obj.id) return;
     const seed = seedRef.current;
-    if (!seed || document.activeElement === seed) return;
+    if (!seed || activeElement() === seed) return;
     seed.focus();
     seed.select();
   }, [editorFocusRequest, obj.id]);

@@ -23,7 +23,8 @@ export function useDismiss(
   useEffect(() => {
     if (!active) return;
     const onPointer = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) onDismissRef.current();
+      // The path, since a pointer inside a shadow root reaches window with the host as its target.
+      if (!ref.current || !e.composedPath().includes(ref.current)) onDismissRef.current();
     };
     // Capture phase and consumed: the open popover is the top layer, so its Escape reaches nothing beneath.
     const onKey = (e: KeyboardEvent) => {

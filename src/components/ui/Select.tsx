@@ -6,6 +6,7 @@ import {
   ListboxOption,
 } from '@headlessui/react';
 import { ChevronDownIcon, CheckIcon } from '@heroicons/react/16/solid';
+import { isEmbedded } from '../../store/labelStore';
 
 export interface SelectOption<T extends string | number> {
   value: T;
@@ -60,16 +61,18 @@ export function Select<T extends string | number>({
   onHoverOption,
 }: SelectProps<T>) {
   const selected = groups.flatMap((g) => g.options).find((o) => o.value === value);
+  const button = useRef<HTMLButtonElement>(null);
   return (
     <Listbox value={value} onChange={onChange} disabled={disabled}>
-      <ListboxButton id={id} className={triggerCls} aria-label={ariaLabel}>
+      <ListboxButton ref={button} id={id} className={triggerCls} aria-label={ariaLabel}>
         <span className="truncate flex-1">{selected?.label ?? ''}</span>
         {selected?.badge && <span className={`${badgeCls} text-muted`}>{selected.badge}</span>}
         <ChevronDownIcon className="w-3 h-3 shrink-0 text-muted" />
       </ListboxButton>
       <ListboxOptions
-        anchor="bottom start"
-        className="w-(--button-width) [--anchor-gap:4px] max-h-60 overflow-auto rounded border border-border-2 bg-surface shadow-lg z-50 py-1 focus:outline-none"
+        // Anchoring portals the list to the page's body, beyond the styles of <zplab-editor>'s shadow root.
+        {...(isEmbedded ? { ref: (list: HTMLElement | null) => { if (list) placeUnder(list, button.current); } } : { anchor: 'bottom start' as const })}
+        className={`${isEmbedded ? 'fixed' : 'w-(--button-width) [--anchor-gap:4px]'} max-h-60 overflow-auto rounded border border-border-2 bg-surface shadow-lg z-50 py-1 focus:outline-none`}
         onMouseLeave={() => onHoverOption?.(null)}
       >
         {onHoverOption && <HoverEnd onEnd={onHoverOption} />}
@@ -132,4 +135,18 @@ function HoverEnd<T extends string | number>({ onEnd }: { onEnd: (value: T | nul
   });
   useEffect(() => () => latest.current(null), []);
   return null;
+}
+
+/** Below the button, or above it when the list would not fit underneath. */
+function placeUnder(list: HTMLElement, button: HTMLElement | null) {
+  if (!button) return;
+  const { left, width, top, bottom } = button.getBoundingClientRect();
+  // max-h-60 plus the gap.
+  const below = window.innerHeight - bottom >= 244 || top < 244;
+  Object.assign(list.style, {
+    left: `${left}px`,
+    width: `${width}px`,
+    top: below ? `${bottom + 4}px` : '',
+    bottom: below ? '' : `${window.innerHeight - top + 4}px`,
+  });
 }

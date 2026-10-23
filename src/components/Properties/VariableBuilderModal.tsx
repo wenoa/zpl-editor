@@ -10,7 +10,7 @@ import { VariableInspector } from "./VariableInspector";
 import { VariableCsvPanel } from "./VariableCsvPanel";
 import { useT } from "../../hooks/useT";
 import { labelCls } from "../ui/formStyles";
-import { useLabelStore, getCurrentObjects } from "../../store/labelStore";
+import { useLabelStore, getCurrentObjects, isEmbedded } from "../../store/labelStore";
 import { findObjectById } from "@zplab/core/types/Group";
 import { markerOf } from "@zplab/core/types/Variable";
 import { fieldIsMultiline } from "@zplab/core/registry/text";
@@ -152,10 +152,12 @@ function VariableBuilder({ objectId }: { objectId: string }) {
             onLeave={close}
             onRename={renameInDraft}
           />
-          <VariableCsvPanel
-            selectedVarName={selected?.kind === "var" ? selected.key : null}
-            onLeave={close}
-          />
+          {!isEmbedded && (
+            <VariableCsvPanel
+              selectedVarName={selected?.kind === "var" ? selected.key : null}
+              onLeave={close}
+            />
+          )}
         </div>
       </div>
     </VariableBuilderShell>

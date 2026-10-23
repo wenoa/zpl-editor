@@ -1,5 +1,6 @@
 import { RESOURCE_DELIVERIES, type ResourceDelivery } from '@zplab/core/lib/resourceDelivery';
 import { useT } from '../../hooks/useT';
+import { isEmbedded } from '../../store/labelStore';
 import { FieldLabel } from './ZplCmd';
 import { Select } from '../ui/Select';
 
@@ -44,7 +45,7 @@ export function DeliverySelect({ value, onChange, resource, subject, blocked, is
       />
       <p className={`text-[10px] leading-snug ${warn ? 'text-warning' : 'text-muted'}`}>{hints[value]}</p>
       {issue && <p className="text-[10px] text-warning">{issue}</p>}
-      {manage && (
+      {manage && !isEmbedded && (
         <button type="button" aria-label={`${manage.label}: ${subject}`} className="self-start text-[10px] text-accent hover:underline" onClick={manage.open}>
           {manage.label}
         </button>

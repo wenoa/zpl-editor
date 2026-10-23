@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MagnifyingGlassIcon, PlusIcon, LinkIcon } from "@heroicons/react/16/solid";
 import { useT } from "../../hooks/useT";
-import { useLabelStore } from "../../store/labelStore";
+import { useLabelStore, isEmbedded } from "../../store/labelStore";
 import {
   CLOCK_TOKEN_LABELS,
   clockMarkerBody,
@@ -144,16 +144,18 @@ export function VariableInsertPalette({
             </div>
           );
         })}
-        <button
-          type="button"
-          disabled={!slotsLeft}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={addAndInsert}
-          className="flex items-center gap-1.5 w-full px-2 py-1.5 mt-1 rounded text-xs font-mono border border-dashed border-border text-muted hover:text-text hover:border-border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <PlusIcon className="w-3.5 h-3.5" />
-          {t.variables.add}
-        </button>
+        {!isEmbedded && (
+          <button
+            type="button"
+            disabled={!slotsLeft}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={addAndInsert}
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 mt-1 rounded text-xs font-mono border border-dashed border-border text-muted hover:text-text hover:border-border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <PlusIcon className="w-3.5 h-3.5" />
+            {t.variables.add}
+          </button>
+        )}
       </section>
 
       {controlKeysEnabled && (

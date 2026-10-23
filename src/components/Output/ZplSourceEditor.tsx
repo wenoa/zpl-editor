@@ -11,6 +11,7 @@ import {
   selectShadowFindings,
   selectSourceDocumentState,
   selectKeepExportMetadata,
+  isEmbedded,
 } from '../../store/labelStore';
 import type { SourceEditMode } from '../../store/slices/sourceEditSlice';
 import { SourceApplyConfirmDialog } from './SourceApplyConfirmDialog';
@@ -53,7 +54,7 @@ export function ZplSourceEditor({
 }) {
   const t = useT();
   const previewActive = useLabelStore(selectPreviewLocksEditor);
-  const readOnly = previewActive || gateRefusal !== null;
+  const readOnly = previewActive || gateRefusal !== null || isEmbedded;
   // An empty pane has no format to put a command into.
   const canInsert = !readOnly && value.trim() !== '';
   const hideSidecars = !useLabelStore(selectKeepExportMetadata);
@@ -94,11 +95,13 @@ export function ZplSourceEditor({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="flex flex-1 min-h-0 min-w-0">
-        <ZplCatalogList
-          selection={catalog}
-          onInsert={canInsert ? (text) => editorRef.current?.insertCommand(text) : undefined}
-          editorHasFocus={editorHasFocus}
-        />
+        {!isEmbedded && (
+          <ZplCatalogList
+            selection={catalog}
+            onInsert={canInsert ? (text) => editorRef.current?.insertCommand(text) : undefined}
+            editorHasFocus={editorHasFocus}
+          />
+        )}
         <div className="flex flex-col flex-1 min-h-0 min-w-[14rem] bg-surface-2 font-mono text-xs text-text">
           <ZplCodeMirror
             key={crlfKey ? 'crlf' : 'lf'}
@@ -124,7 +127,7 @@ export function ZplSourceEditor({
             onEscape={catalog.unpin}
           />
         </div>
-        <ZplCatalogDetail selection={catalog} editorHasFocus={editorHasFocus} />
+        {!isEmbedded && <ZplCatalogDetail selection={catalog} editorHasFocus={editorHasFocus} />}
       </div>
       {gateMsg !== null && (
         <p

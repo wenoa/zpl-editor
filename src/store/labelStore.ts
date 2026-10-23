@@ -1,6 +1,6 @@
 import { create, useStore } from 'zustand';
 import { temporal } from 'zundo';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { dirtyTracking } from './dirtyTracking';
 import type { ObjectChanges } from '@zplab/core/types/LabelObject';
 import { PRINTER_PROFILE_FIELDS, repairPrinterProfile } from '@zplab/core/types/PrinterProfile';
@@ -507,8 +507,21 @@ const temporalEquality = (a: TemporalSlice, b: TemporalSlice) =>
     (k) => TEMPORAL_VIEW_KEYS.has(k) || a[k] === b[k],
   );
 
+/** Built as <zplab-editor> (`--mode element`, see src/element.tsx). */
+export const isEmbedded = import.meta.env.MODE === 'element';
+
+function memoryStorage(): StateStorage {
+  const items = new Map<string, string>();
+  return {
+    getItem: (name) => items.get(name) ?? null,
+    setItem: (name, value) => void items.set(name, value),
+    removeItem: (name) => void items.delete(name),
+  };
+}
+
 // Undefined where the browser blocks storage, and persist then exposes no api to hydrate through.
-const sessionStore = createJSONStorage(() => localStorage);
+// An embedded editor neither restores nor overwrites the session this origin keeps.
+const sessionStore = createJSONStorage(() => (isEmbedded ? memoryStorage() : localStorage));
 
 export const useLabelStore = create<LabelState>()(
   temporal(
