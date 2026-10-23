@@ -1,0 +1,53 @@
+name: zplab dist
+
+# Builds <zplab-editor> and commits the package to the zplab-dist branch, tagged
+# zplab-<version>. An app installs it with "@wenoa/zplab": "github:wenoa/ZPLab#zplab-<version>".
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version, e.g. 0.1.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  dist:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm exec vite build --config vite.element.config.ts
+      - run: cp LICENSE web-component/
+
+      - working-directory: web-component
+        run: npm version "$VERSION" --no-git-tag-version
+
+      - name: Commit the package to zplab-dist
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          dist="$RUNNER_TEMP/zplab-dist"
+          if git fetch --depth=1 origin zplab-dist; then
+            git worktree add -B zplab-dist "$dist" FETCH_HEAD
+          else
+            git worktree add --orphan -b zplab-dist "$dist"
+          fi
+          git -C "$dist" rm -rq --ignore-unmatch .
+          cp -R web-component/package.json web-component/index.d.ts web-component/LICENSE web-component/dist "$dist/"
+          git -C "$dist" add -A
+          git -C "$dist" commit -qm "zplab $VERSION from $GITHUB_SHA"
+          git -C "$dist" tag "zplab-$VERSION"
+          git -C "$dist" push origin zplab-dist "zplab-$VERSION"
