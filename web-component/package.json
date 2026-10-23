@@ -1,6 +1,6 @@
 {
   "name": "@wenoa/zplab",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "ZPLab's ZPL label editor as the <zplab-editor> web component",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/wenoa/zpl-editor.git" },
