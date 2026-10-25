@@ -1,8 +1,8 @@
 name: zplab dist
 
 # Every push to web-component that changes what goes into <zplab-editor> builds it into its own
-# branch, release/<short commit hash>. An app installs a build with
-# "@wenoa/zplab": "github:wenoa/zpl-editor#release/<short commit hash>".
+# branch, release/<short commit hash>: one commit on top of the built one, holding only the package.
+# An app installs a build with "@wenoa/zplab": "github:wenoa/zpl-editor#release/<short commit hash>".
 on:
   push:
     branches: [web-component]
@@ -12,6 +12,7 @@ on:
       - web-component/**
       - vite.config.ts
       - vite.element.config.ts
+      - .github/workflows/zplab-dist.yml
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
@@ -47,8 +48,9 @@ jobs:
         run: |
           branch="release/${GITHUB_SHA::7}"
           dist="$RUNNER_TEMP/release"
-          git worktree add --orphan -b "$branch" "$dist"
+          git worktree add -b "$branch" "$dist" "$GITHUB_SHA"
+          git -C "$dist" rm -rq .
           cp -R web-component/package.json web-component/index.d.ts web-component/LICENSE web-component/dist "$dist/"
           git -C "$dist" add -A
-          git -C "$dist" commit -qm "zplab from $GITHUB_SHA"
+          git -C "$dist" commit -qm "zplab build"
           git -C "$dist" push origin "$branch"
