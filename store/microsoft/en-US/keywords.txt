@@ -1,7 +1,0 @@
-ZPL editor
-label designer
-label maker
-barcode generator
-label printer
-thermal printer
-GS1 barcode

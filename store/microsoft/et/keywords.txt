@@ -1,7 +1,0 @@
-ZPL redaktor
-etikettide kujundaja
-etikettide tegemine
-vöötkoodi generaator
-sildiprinter
-termoprinter
-GS1 vöötkood

@@ -1,5 +1,0 @@
-ZPLab ir bezmaksas, atvērtā koda etiķešu veidotājs un ZPL redaktors, kas paredzēts ar ZPL saderīgiem printeriem. Etiķetes var izdrukāt vai eksportēt ZPL, PDF vai attēla formātā.
-
-Etiķete ir redzama tieši audeklā. Alternatīvu priekšskatījumu var nodrošināt tīkla printeris vai, ar piekrišanu, trešās puses pakalpojums Labelary.
-
-Konts nav nepieciešams. ZPLab tiek izplatīts ar MIT licenci.

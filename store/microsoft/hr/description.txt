@@ -1,5 +1,0 @@
-ZPLab je besplatan alat otvorenog koda za izradu naljepnica i uređivač ZPL-a za pisače koji podržavaju ZPL. Naljepnice se mogu ispisati ili izvesti u ZPL, PDF ili slikovnu datoteku.
-
-Platno izravno prikazuje naljepnicu. Alternativni pregled može izraditi mrežni pisač ili, uz pristanak, vanjska usluga Labelary.
-
-Račun nije potreban. ZPLab je objavljen pod MIT licencom.

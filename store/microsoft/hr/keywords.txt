@@ -1,7 +1,0 @@
-ZPL editor
-izrada naljepnica
-dizajn naljepnica
-generator barkoda
-pisač naljepnica
-termalni pisač
-GS1 barkod

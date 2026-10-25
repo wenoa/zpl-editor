@@ -1,5 +1,0 @@
-A ZPLab egy ingyenes, nyílt forráskódú címketervező és ZPL-szerkesztő ZPL-kompatibilis nyomtatókhoz. A címkék nyomtathatók, vagy ZPL-, PDF- vagy képfájlként exportálhatók.
-
-A vászon közvetlenül megjeleníti a címkét. Alternatív előnézetet egy hálózati nyomtató készíthet, hozzájárulás esetén pedig a külső Labelary szolgáltatás.
-
-Nincs szükség fiókra. A ZPLab MIT-licencű.

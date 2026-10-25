@@ -1,5 +1,0 @@
-ZPLab yra nemokama atvirojo kodo etikečių kūrimo programa ir ZPL redaktorius, skirta su ZPL suderinamiems spausdintuvams. Etiketes galima spausdinti arba eksportuoti kaip ZPL, PDF ar vaizdą.
-
-Drobėje etiketė rodoma tiesiogiai. Alternatyvią peržiūrą gali pateikti tinklo spausdintuvas arba, gavus sutikimą, išorinė paslauga Labelary.
-
-Paskyra nereikalinga. ZPLab platinamas pagal MIT licenciją.

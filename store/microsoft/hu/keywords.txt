@@ -1,7 +1,0 @@
-ZPL szerkesztő
-címketervező
-címkekészítő
-vonalkód generátor
-címkenyomtató
-hőnyomtató
-GS1 vonalkód

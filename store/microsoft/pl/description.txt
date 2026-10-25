@@ -1,5 +1,0 @@
-ZPLab to bezpłatny program open source do projektowania etykiet i edytor ZPL dla drukarek zgodnych z ZPL. Etykiety można wydrukować lub wyeksportować jako plik ZPL, PDF lub obraz.
-
-Etykieta jest widoczna bezpośrednio na płótnie. Dodatkowy podgląd może wygenerować drukarka sieciowa lub, po wyrażeniu zgody, zewnętrzna usługa Labelary.
-
-Konto nie jest wymagane. ZPLab działa na licencji MIT.

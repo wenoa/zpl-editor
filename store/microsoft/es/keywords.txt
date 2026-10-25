@@ -1,7 +1,0 @@
-editor ZPL
-diseñador de etiquetas
-crear etiquetas
-generador de códigos de barras
-impresora de etiquetas
-impresora térmica
-código de barras GS1

@@ -1,7 +1,0 @@
-ZPL-editori
-etikettisuunnittelija
-tarraohjelma
-viivakoodigeneraattori
-etikettitulostin
-lämpötulostin
-GS1-viivakoodi

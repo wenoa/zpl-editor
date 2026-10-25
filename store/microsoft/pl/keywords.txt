@@ -1,7 +1,0 @@
-edytor ZPL
-projektowanie etykiet
-drukowanie etykiet
-generator kodów kreskowych
-drukarka etykiet
-drukarka termiczna
-kod kreskowy GS1

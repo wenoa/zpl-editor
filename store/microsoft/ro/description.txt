@@ -1,5 +1,0 @@
-ZPLab este o aplicație gratuită, open-source, pentru proiectarea etichetelor și editarea ZPL, creată pentru imprimante compatibile ZPL. Etichetele pot fi imprimate sau exportate ca fișiere ZPL, PDF sau imagine.
-
-Pânza afișează eticheta direct. O previzualizare alternativă poate fi randată de o imprimantă din rețea sau, cu acordul utilizatorului, de serviciul terț Labelary.
-
-Nu este necesar un cont. ZPLab are licență MIT.

@@ -1,5 +1,0 @@
-ZPLab is a free, open-source label designer and ZPL editor for ZPL-compatible printers. Labels can be printed or exported as ZPL, PDF or image files.
-
-The canvas shows the label directly. An alternative preview can be rendered by a network printer or, with consent, by the third-party service Labelary.
-
-No account required. ZPLab is MIT-licensed.

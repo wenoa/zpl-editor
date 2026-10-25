@@ -1,5 +1,0 @@
-ZPLab es un diseñador de etiquetas y editor ZPL de código abierto y gratuito para impresoras compatibles con ZPL. Las etiquetas se pueden imprimir o exportar como archivos ZPL, PDF o imagen.
-
-El lienzo muestra la etiqueta directamente. Una impresora de red o, previo consentimiento, el servicio externo Labelary pueden generar una vista previa alternativa.
-
-No se requiere cuenta. ZPLab tiene licencia MIT.

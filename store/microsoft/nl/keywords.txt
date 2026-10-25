@@ -1,7 +1,0 @@
-ZPL editor
-etiketten maken
-etiketten ontwerpen
-barcode generator
-labelprinter
-thermische printer
-GS1 barcode

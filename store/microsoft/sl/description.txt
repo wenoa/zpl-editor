@@ -1,5 +1,0 @@
-ZPLab je brezplačen odprtokodni oblikovalnik nalepk in urejevalnik ZPL za tiskalnike, združljive z ZPL. Nalepke je mogoče natisniti ali izvoziti v obliki ZPL, PDF ali slike.
-
-Platno nalepko prikaže neposredno. Alternativni predogled lahko izriše omrežni tiskalnik ali, s privolitvijo, zunanja storitev Labelary.
-
-Račun ni potreben. ZPLab je na voljo pod licenco MIT.

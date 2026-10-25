@@ -1,7 +1,0 @@
-urejevalnik ZPL
-oblikovanje nalepk
-izdelava nalepk
-generator črtne kode
-tiskalnik nalepk
-termični tiskalnik
-črtna koda GS1
