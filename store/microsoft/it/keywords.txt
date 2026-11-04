@@ -1,7 +1,0 @@
-editor ZPL
-progettazione etichette
-software per etichette
-generatore codici a barre
-stampante etichette
-stampante termica
-codice a barre GS1

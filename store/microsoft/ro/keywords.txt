@@ -1,7 +1,0 @@
-editor ZPL
-creare etichete
-imprimare etichete
-generator cod de bare
-imprimantă etichete
-imprimantă termică
-cod de bare GS1
