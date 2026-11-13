@@ -1,16 +1,16 @@
 import { create } from "zustand";
 import { newId } from "@zplab/core/lib/ids";
 import { labelMetaOf } from "@zplab/core/lib/zplLabelMeta";
-import { generateMultiPageZPL } from "@zplab/core/lib/zplGenerator";
 import { isValidVariableName, nextFreeFnNumber, stripMarkerDelimiters, type Variable } from "@zplab/core/types/Variable";
 import { useLabelStore, type LabelState } from "../store/labelStore";
-import { selectDesignText } from "../store/labelStore.selectors";
 import { finishZplExport } from "./exportZpl";
+import { TOKEN_NAME, labelFromZplWithTokens, zplWithTokens } from "./zplTokens";
 
-/* <zplab-editor> (src/element.tsx) opens one label and hands it back. Without a
- * design it starts a new label at 300 dpi. The variables are the ones the
- * application fills by name: the editor adds the ones the design lacks and the
- * user can neither add, rename nor remove variables. */
+/* <zplab-editor> (src/element.tsx) opens one label's ZPL and hands it back, its
+ * variables as {{name}} tokens. An empty ZPL starts a new label. The application
+ * gives the size and the density, which the user cannot change. The variables are
+ * the ones the application fills by name: the editor adds the ones the label lacks
+ * and the user can neither add, rename nor remove variables. */
 
 export const SAVE_ANSWER_TIMEOUT_MS = 30_000;
 
@@ -20,18 +20,25 @@ export interface RequiredVariable {
   defaultValue?: string;
 }
 
+/** The label's size, which the application keeps. */
+export interface LabelSize {
+  widthMm: number;
+  heightMm: number;
+}
+
+/** The densities of Zebra printheads, in dots per millimetre. */
+const DOTS_PER_MM_AT_DPI: Readonly<Record<number, number>> = { 152: 6, 203: 8, 300: 12, 600: 24 };
+
 /** What a save hands the application. */
 export interface EmbedLabel {
   zpl: string;
-  design: string;
-  variables: { name: string; fnNumber: number }[];
 }
 
 /** Stores the label: the save counts once its result settles, and fails when it throws or rejects. */
 export type SaveHandler = (label: EmbedLabel) => unknown;
 
 export interface EmbedError {
-  code: "design" | "variables";
+  code: "zpl" | "size" | "dpi" | "variables";
   message: string;
 }
 
@@ -80,19 +87,29 @@ export function setSaveHandler(handler: SaveHandler | undefined) {
   saveHandler = handler;
 }
 
-/** Opens `design`, or a new label without it, with the application's variables. */
-export function openLabel(design: string | undefined, variables: readonly RequiredVariable[]): EmbedError | undefined {
+/** Opens `zpl`, or a new label when it is empty, at `size` and `dpi` with the application's variables. */
+export function openLabel(
+  zpl: unknown,
+  variables: readonly RequiredVariable[],
+  size: LabelSize | undefined,
+  dpi: number | undefined,
+): EmbedError | undefined {
+  if (typeof zpl !== "string") return refused({ code: "zpl", message: "El ZPL de la etiqueta tiene que ser un texto." });
   const invalid = invalidVariable(variables);
-  if (invalid !== undefined) {
-    setSession({ phase: "refused" });
-    return { code: "variables", message: `El nombre de variable "${invalid}" no es válido.` };
-  }
+  if (invalid !== undefined) return refused({ code: "variables", message: `El nombre de variable "${invalid}" no es válido.` });
+  if (!isValidSize(size)) return refused(INVALID_SIZE);
+  const dpmm = dpi === undefined ? undefined : DOTS_PER_MM_AT_DPI[dpi];
+  if (dpmm === undefined) return refused({ code: "dpi", message: "La densidad tiene que ser 152, 203, 300 o 600 dpi." });
   const store = useLabelStore.getState();
-  if (design === undefined) {
-    store.loadDesign({ ...labelMetaOf(store.label), dpmm: 12 }, []);
-  } else if (!store.loadDesignText(design)) {
-    setSession({ phase: "refused" });
-    return { code: "design", message: "El archivo de diseño no se puede abrir." };
+  const fixed = { ...labelMetaOf(store.label), dpmm, ...sizeOf(size) };
+  if (zpl.trim() === "") {
+    store.loadDesign(fixed, []);
+  } else {
+    const opened = labelFromZplWithTokens(zpl, dpmm);
+    if (opened === undefined) return refused({ code: "zpl", message: "El ZPL no contiene una etiqueta que se pueda abrir." });
+    // The application's defaults come first: a token carries only its name.
+    const named = [...variables, ...opened.tokens.map((name) => ({ name }))];
+    store.loadDesign({ ...opened.labelConfig, ...fixed }, opened.pages, withRequiredVariables(opened.variables, named));
   }
   useLabelStore.setState((s) => ({ variables: withRequiredVariables(s.variables, variables) }));
   // The opened label is where the session's history starts.
@@ -110,8 +127,24 @@ export function requireVariables(variables: readonly RequiredVariable[]): EmbedE
   return undefined;
 }
 
-/** True when `design` is what the editor already shows. */
-export const showsDesign = (design: string) => selectDesignText(useLabelStore.getState()) === design;
+/** Gives the open label `size`. Not the user's edit: neither undone nor waiting to be saved. */
+export function resizeLabel(size: LabelSize | undefined): EmbedError | undefined {
+  if (!isValidSize(size)) return INVALID_SIZE;
+  const previous = useLabelStore.getState().label;
+  const { temporal } = useLabelStore;
+  temporal.getState().pause();
+  useLabelStore.getState().setLabelConfig(sizeOf(size));
+  temporal.getState().resume();
+  const resized = useLabelStore.getState().label;
+  const session = useEmbedSession.getState();
+  const followed = (design: Design) => (design.label === previous ? { ...design, label: resized } : design);
+  if ("sent" in session) setSession({ ...session, delivered: followed(session.delivered), sent: followed(session.sent) });
+  else if ("delivered" in session) setSession({ ...session, delivered: followed(session.delivered) });
+  return undefined;
+}
+
+/** True when `zpl` is what the editor would hand over now. */
+export const showsZpl = (zpl: unknown) => zpl === zplOf(useLabelStore.getState());
 
 export function saveLabel() {
   const session = useEmbedSession.getState();
@@ -122,11 +155,7 @@ export function saveLabel() {
   clearTimeout(unanswered);
   unanswered = setTimeout(() => settleSave(saveId, false), SAVE_ANSWER_TIMEOUT_MS);
   const handler = saveHandler;
-  const label: EmbedLabel = {
-    zpl: finishZplExport(generateMultiPageZPL(s.label, s.pages, s.variables)),
-    design: selectDesignText(s),
-    variables: s.variables.map(({ name, fnNumber }) => ({ name, fnNumber })),
-  };
+  const label: EmbedLabel = { zpl: zplOf(s) };
   // Each save keeps its own result, so a late one settles that save alone.
   Promise.resolve()
     .then(() => {
@@ -147,8 +176,25 @@ function settleSave(saveId: number, ok: boolean, message?: string) {
   setSession(ok ? { phase: "editing", delivered: session.sent } : { ...session, phase: "failed", message });
 }
 
+const INVALID_SIZE: EmbedError = { code: "size", message: "La etiqueta necesita un ancho y un alto mayores a cero." };
+
+function isValidSize(size: LabelSize | undefined): size is LabelSize {
+  return size !== undefined && [size.widthMm, size.heightMm].every((mm) => Number.isFinite(mm) && mm > 0);
+}
+
+const sizeOf = ({ widthMm, heightMm }: LabelSize) => ({ widthMm, heightMm });
+
+const zplOf = ({ label, pages, variables }: Design) => finishZplExport(zplWithTokens(label, pages, variables));
+
+/** Nothing may be saved over the application's label. */
+function refused(error: EmbedError) {
+  setSession({ phase: "refused" });
+  return error;
+}
+
+/** A name travels as a {{name}} token, so it holds only letters, digits and _ . -. */
 function invalidVariable(variables: readonly RequiredVariable[]) {
-  return variables.find(({ name }) => name !== name.trim() || !isValidVariableName(name))?.name;
+  return variables.find(({ name }) => !isValidVariableName(name) || !TOKEN_NAME.test(name))?.name;
 }
 
 /** Adds the missing ones on the lowest free ^FN slots; the same list when none is missing. */

@@ -2,15 +2,19 @@
 import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
-import { serializeDesign } from "@zplab/core/lib/designFile";
+import { getEntry } from "@zplab/core/registry";
+import type { LabelObject } from "@zplab/core/types/Group";
 import {
   SAVE_ANSWER_TIMEOUT_MS,
   openLabel,
   requireVariables,
+  resizeLabel,
   saveLabel,
   setSaveHandler,
+  showsZpl,
   useEmbedSession,
   type EmbedLabel,
+  type LabelSize,
 } from "./embed";
 import { isEditableTarget } from "./dom";
 import { useLabelStore } from "../store/labelStore";
@@ -27,11 +31,26 @@ const STANDALONE_SESSION = vi.hoisted(() => {
   return session;
 });
 
-const designWithCustomer = serializeDesign({ widthMm: 50, heightMm: 30, dpmm: 8 }, [{ objects: [] }], [
-  { id: "v1", name: "customer", fnNumber: 3, defaultValue: "ACME" },
-]);
+const SIZE: LabelSize = { widthMm: 60, heightMm: 40 };
+const DPI = 203;
+
+/** A label a save handed over: 50 × 30 mm at 203 dpi, its customer as a token. */
+const SAVED = "^XA\n^PW400\n^LL240\n^CI28\n^FO10,15^A0N,30,0^FH_^FDCliente: {{customer:FD}}^FS\n^XZ";
 
 const store = () => useLabelStore.getState();
+
+const text = (content: string) =>
+  ({
+    id: "t1",
+    type: "text",
+    x: 10,
+    y: 60,
+    rotation: 0,
+    props: { ...(getEntry("text")?.defaultProps as object), content },
+  }) as unknown as LabelObject;
+
+const addText = (content: string) =>
+  act(() => useLabelStore.setState((s) => ({ pages: [{ ...s.pages[0], objects: [...(s.pages[0]?.objects ?? []), text(content)] }] })));
 
 const saveOffered = () => {
   render(<EmbedSaveButton />);
@@ -74,77 +93,115 @@ afterEach(() => {
 });
 
 describe("the application opens a label", () => {
-  it("opens the design file it gives", () => {
-    expect(openLabel(designWithCustomer, [])).toBeUndefined();
+  it("opens the ZPL it gives at the size and density it gives, each token as its variable", () => {
+    expect(openLabel(SAVED, [], SIZE, DPI)).toBeUndefined();
 
-    expect(store().label.widthMm).toBe(50);
+    expect(store().label).toMatchObject({ widthMm: 60, heightMm: 40, dpmm: 8 });
+    expect(store().pages[0]?.objects).toEqual([expect.objectContaining({ props: expect.objectContaining({ content: "Cliente: «customer»" }) })]);
+    expect(store().variables.map(({ name }) => name)).toEqual(["customer"]);
     expect(useEmbedSession.getState().phase).toBe("editing");
   });
 
-  it("starts a new label at 300 dpi without a design", () => {
-    store().loadDesignText(designWithCustomer);
+  it("starts a new label at the size and density it gives from an empty ZPL", () => {
+    openLabel(SAVED, [], SIZE, DPI);
 
-    openLabel(undefined, []);
+    openLabel("", [], SIZE, 300);
 
+    expect(store().pages.flatMap(({ objects }) => objects)).toEqual([]);
     expect(store().variables).toEqual([]);
-    expect(store().label.dpmm).toBe(12);
+    expect(store().label).toMatchObject({ widthMm: 60, heightMm: 40, dpmm: 12 });
   });
 
-  it("adds the variables the design lacks on free slots and keeps the ones it has", () => {
-    openLabel(designWithCustomer, [{ name: "customer" }, { name: "lot", defaultValue: "«L-1»" }]);
+  it("gives a token the application's default", () => {
+    openLabel(SAVED, [{ name: "customer", defaultValue: "ACME" }, { name: "lot", defaultValue: "«L-1»" }], SIZE, DPI);
 
     expect(store().variables).toEqual([
-      expect.objectContaining({ name: "customer", fnNumber: 3, defaultValue: "ACME" }),
-      expect.objectContaining({ name: "lot", fnNumber: 1, defaultValue: "L-1" }),
+      expect.objectContaining({ name: "customer", defaultValue: "ACME" }),
+      expect.objectContaining({ name: "lot", defaultValue: "L-1" }),
     ]);
     expect(useLabelStore.temporal.getState().pastStates).toHaveLength(0);
   });
 
   it("adds the variables it requires later to the open label", () => {
-    openLabel(designWithCustomer, []);
+    openLabel(SAVED, [], SIZE, DPI);
 
     requireVariables([{ name: "lot" }]);
 
     expect(store().variables.map(({ name }) => name)).toEqual(["customer", "lot"]);
   });
 
-  it("refuses an unreadable design, so nothing is saved over the application's label", () => {
-    expect(openLabel("{ not a design", [])).toMatchObject({ code: "design" });
-
-    expect(useEmbedSession.getState()).toEqual({ phase: "refused" });
-  });
-
-  it("refuses a variable name the editor cannot hold", () => {
-    expect(openLabel(undefined, [{ name: "a«b" }])).toMatchObject({ code: "variables" });
+  it.each([
+    ["zpl", undefined, SIZE, DPI, []],
+    ["zpl", "no es ZPL", SIZE, DPI, []],
+    ["size", SAVED, undefined, DPI, []],
+    ["size", SAVED, { widthMm: 0, heightMm: 40 }, DPI, []],
+    ["size", SAVED, { widthMm: Number.NaN, heightMm: 40 }, DPI, []],
+    ["dpi", SAVED, SIZE, undefined, []],
+    ["dpi", SAVED, SIZE, 250, []],
+    ["variables", SAVED, SIZE, DPI, [{ name: "a«b" }]],
+    ["variables", SAVED, SIZE, DPI, [{ name: "código cliente" }]],
+    ["variables", SAVED, SIZE, DPI, [{ name: "a}b" }]],
+  ])("refuses to open with an invalid %s, so nothing is saved over the application's label (%#)", (code, zpl, size, dpi, variables) => {
+    expect(openLabel(zpl, variables, size, dpi)).toMatchObject({ code });
 
     expect(useEmbedSession.getState()).toEqual({ phase: "refused" });
   });
 });
 
+describe("the application resizes the open label", () => {
+  beforeEach(() => {
+    openLabel(SAVED, [], SIZE, DPI);
+  });
+
+  it("to the size it gives, which the user cannot undo and need not save", () => {
+    expect(resizeLabel({ widthMm: 80, heightMm: 30 })).toBeUndefined();
+
+    expect(store().label).toMatchObject({ widthMm: 80, heightMm: 30 });
+    expect(useLabelStore.temporal.getState().pastStates).toHaveLength(0);
+    expect(saveOffered()).toBe(false);
+  });
+
+  it("keeps the label as it is when the size is not valid", () => {
+    expect(resizeLabel({ widthMm: 0, heightMm: 30 })).toMatchObject({ code: "size" });
+
+    expect(store().label).toMatchObject({ widthMm: 60, heightMm: 40 });
+  });
+});
+
 describe("the user saves", () => {
   beforeEach(() => {
-    openLabel(designWithCustomer, [{ name: "customer" }]);
+    openLabel(SAVED, [{ name: "customer", defaultValue: "ACME" }, { name: "lot" }], SIZE, DPI);
   });
 
   it("only once the label changes", () => {
     expect(saveOffered()).toBe(false);
 
-    act(() => store().setLabelConfig({ widthMm: 60 }));
+    addText("«lot»");
 
     expect(screen.getByRole("button", { name: "Guardar" }).hasAttribute("disabled")).toBe(false);
   });
 
   describe("a changed label", () => {
-    beforeEach(() => store().setLabelConfig({ widthMm: 60 }));
+    beforeEach(() => addText("Lote «lot»"));
 
-    it("hands the application the ZPL, the design file and each variable's slot", async () => {
+    it("hands the application the ZPL at the size and density, each variable as a token", async () => {
       saveLabel();
       await settled();
 
       expect(pending).toHaveLength(1);
-      expect(received(0).label).toMatchObject({ variables: [{ name: "customer", fnNumber: 3 }] });
-      expect(received(0).label.zpl).toContain("^XA");
-      expect(JSON.parse(received(0).label.design)).toMatchObject({ label: { widthMm: 60 } });
+      expect(received(0).label).toEqual({
+        zpl: "^XA\n^PW480\n^LL320\n^CI28\n^FO10,15^A0N,30,0^FH_^FDCliente: {{customer:FD}}^FS\n^FO10,65^A0N,30,0^FH_^FDLote {{lot:FD}}^FS\n^XZ",
+      });
+    });
+
+    it("opens what it handed over as the same label", async () => {
+      saveLabel();
+      await settled();
+      const { zpl } = received(0).label;
+
+      openLabel(zpl, [], SIZE, DPI);
+
+      expect(showsZpl(zpl)).toBe(true);
     });
 
     it("counts the label as delivered once the application stored it", async () => {
@@ -170,7 +227,7 @@ describe("the user saves", () => {
 
     it("lets a late result of an earlier save change nothing", async () => {
       saveLabel();
-      store().setLabelConfig({ widthMm: 70 });
+      addText("otro");
       saveLabel();
       await settled();
 
@@ -200,7 +257,7 @@ describe("an embedded editor", () => {
   const sidebar = () => render(<RightSidebar canvasRef={createRef<LabelCanvasHandle>()} />);
 
   beforeEach(() => {
-    openLabel(undefined, [{ name: "customer", defaultValue: "ACME" }]);
+    openLabel("", [{ name: "customer", defaultValue: "ACME" }], SIZE, DPI);
     act(() => useLabelStore.setState({ selectedIds: [], sidebarTab: "properties" }));
   });
 
@@ -213,12 +270,11 @@ describe("an embedded editor", () => {
     ]);
   });
 
-  it("sizes the label by width and height only", () => {
+  it("leaves the label's settings to the application, size included", () => {
     sidebar();
 
-    expect(screen.queryAllByText(store().translations.label.width, { exact: false })).not.toHaveLength(0);
-    expect(screen.queryByText(store().translations.label.dpmm)).toBeNull();
-    expect(screen.queryByText(store().translations.label.safeArea)).toBeNull();
+    expect(screen.queryByText(store().translations.label.formatSection)).toBeNull();
+    expect(screen.queryAllByText(store().translations.label.width, { exact: false })).toHaveLength(0);
   });
 
   it("keeps the application's variables as they are named, and adds none", () => {
@@ -230,12 +286,12 @@ describe("an embedded editor", () => {
     expect(screen.queryByRole("button", { name: store().translations.variables.add })).toBeNull();
   });
 
-  it("offers Code 128 as its only barcode", () => {
+  it("offers Code 128 and QR as its only barcodes", () => {
     const barcodes = addableGroupsFor(store().translations)
       .filter(({ key }) => key !== "text" && key !== "shape")
       .flatMap(({ entries }) => entries.map(({ id }) => id));
 
-    expect(barcodes).toEqual(["code128"]);
+    expect(barcodes).toEqual(["code128", "qrcode"]);
   });
 
   it("neither restores nor overwrites the session this origin keeps", () => {

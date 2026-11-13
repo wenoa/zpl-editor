@@ -14,24 +14,30 @@ import { offered } from "./components/Palette/paletteGroups";
 import {
   openLabel,
   requireVariables,
+  resizeLabel,
   selectEmbedUnsaved,
   setSaveHandler,
-  showsDesign,
+  showsZpl,
+  useEmbedSession,
   type EmbedError,
+  type LabelSize,
   type RequiredVariable,
   type SaveHandler,
 } from "./lib/embed";
 
 /* <zplab-editor> edits one label inside a shadow root:
  *
- *   design       property  the design file text a save handed over; without it a new label at 300 dpi
+ *   zpl          property  the label's ZPL as a save handed it over, "" for a new label
+ *   size         property  { widthMm, heightMm }, the label's size: required, it can change while the label is open
+ *   dpi          property  152, 203, 300 or 600: the density the label is designed at, required
  *   variables    property  [{ name, defaultValue? }], the variables the application fills by name
  *   theme        property  "light" (default) or "dark"
- *   saveHandler  property  (label: { zpl, design, variables: [{ name, fnNumber }] }) => Promise: the save
+ *   saveHandler  property  (label: { zpl }) => Promise: the ZPL prints at the size and the density, each
+ *                          variable a {{name}} token for the application to fill; the save
  *                          counts once it resolves; a rejection's message reaches the user, and without a
  *                          result in 30 s the editor says so and lets the user save again
  *   unsaved      property  read only: true while the open label differs from the last stored one
- *   error        event     detail { code: "design" | "variables", message }
+ *   error        event     detail { code: "zpl" | "size" | "dpi" | "variables", message }
  */
 
 /** Cap on how long the first render waits for the active locale chunk. */
@@ -40,11 +46,14 @@ const LOCALE_BOOT_WAIT_MS = 250;
 const FONTS = [plexSans400, plexSans500, plexSans600, plexMono400, plexMono500, plexMono600];
 
 initFootprintMeasurer();
-// The default favorites hold a QR code, and Code 128 is the only barcode on offer.
+// Code 128 and QR are the only barcodes on offer, the default favorites included.
 useLabelStore.setState((s) => ({ paletteRows: s.paletteRows.filter(({ entryId }) => offered(entryId)) }));
 
 class ZplabEditor extends HTMLElement {
-  #design: string | undefined;
+  /** Undefined until the application gives it, which refuses to open. */
+  #zpl: string | undefined;
+  #size: LabelSize | undefined;
+  #dpi: number | undefined;
   #variables: readonly RequiredVariable[] = [];
   #theme: "light" | "dark" = "light";
   #saveHandler: SaveHandler | undefined;
@@ -52,13 +61,35 @@ class ZplabEditor extends HTMLElement {
   /** Set once the label opened, a microtask after connecting: frameworks set properties after inserting the element. */
   #opened = false;
 
-  get design() {
-    return this.#design;
+  get zpl() {
+    return this.#zpl;
   }
 
-  set design(design: string | null | undefined) {
-    this.#design = design || undefined;
-    if (this.#opened && !(this.#design !== undefined && showsDesign(this.#design))) this.#open();
+  set zpl(zpl: string | undefined) {
+    this.#zpl = zpl;
+    if (this.#opened && !showsZpl(zpl)) this.#open();
+  }
+
+  get size() {
+    return this.#size;
+  }
+
+  set size(size: LabelSize | null | undefined) {
+    const same = size?.widthMm === this.#size?.widthMm && size?.heightMm === this.#size?.heightMm;
+    this.#size = size ?? undefined;
+    if (!this.#opened || same) return;
+    if (useEmbedSession.getState().phase === "refused") this.#open();
+    else this.#fail(resizeLabel(this.#size));
+  }
+
+  get dpi() {
+    return this.#dpi;
+  }
+
+  set dpi(dpi: number | null | undefined) {
+    const same = dpi === this.#dpi;
+    this.#dpi = dpi ?? undefined;
+    if (this.#opened && !same) this.#open();
   }
 
   get variables() {
@@ -94,7 +125,7 @@ class ZplabEditor extends HTMLElement {
 
   connectedCallback() {
     // Set before the element was defined, a property sits on the instance and hides the setter.
-    for (const name of ["design", "variables", "theme", "saveHandler"] as const) {
+    for (const name of ["zpl", "size", "dpi", "variables", "theme", "saveHandler"] as const) {
       if (!Object.hasOwn(this, name)) continue;
       const value = this[name];
       Reflect.deleteProperty(this, name);
@@ -133,7 +164,7 @@ class ZplabEditor extends HTMLElement {
   }
 
   #open() {
-    this.#fail(openLabel(this.#design, this.#variables));
+    this.#fail(openLabel(this.#zpl, this.#variables, this.#size, this.#dpi));
   }
 
   #applyTheme() {
