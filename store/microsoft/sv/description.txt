@@ -1,5 +1,0 @@
-ZPLab är en gratis etikettdesigner och ZPL-redigerare med öppen källkod för ZPL-kompatibla skrivare. Etiketter kan skrivas ut eller exporteras som ZPL-, PDF- eller bildfiler.
-
-Arbetsytan visar etiketten direkt. En alternativ förhandsvisning kan renderas av en nätverksskrivare eller, efter medgivande, av tredjepartstjänsten Labelary.
-
-Inget konto krävs. ZPLab är MIT-licensierad.

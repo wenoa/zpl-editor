@@ -1,5 +1,0 @@
-ZPLab on ilmainen avoimen lähdekoodin etikettien suunnitteluohjelma ja ZPL-editori ZPL-yhteensopiville tulostimille. Etiketit voi tulostaa tai viedä ZPL-, PDF- tai kuvatiedostoina.
-
-Etiketti näkyy suoraan kankaalla. Vaihtoehtoisen esikatselun voi tuottaa verkkotulostin tai käyttäjän suostumuksella kolmannen osapuolen Labelary-palvelu.
-
-Tiliä ei tarvita. ZPLab on MIT-lisensoitu.

@@ -1,5 +1,0 @@
-ZPLab est un logiciel gratuit et open source de création d'étiquettes et d'édition ZPL pour imprimantes compatibles ZPL. Les étiquettes peuvent être imprimées ou exportées en ZPL, PDF ou image.
-
-Le canevas affiche directement l'étiquette. Un autre aperçu peut être généré par une imprimante réseau ou, après accord, par le service tiers Labelary.
-
-Aucun compte requis. ZPLab est sous licence MIT.
