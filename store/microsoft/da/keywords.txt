@@ -1,7 +1,0 @@
-ZPL editor
-etiketdesign
-lav etiketter
-stregkode generator
-etiketprinter
-termisk printer
-GS1 stregkode

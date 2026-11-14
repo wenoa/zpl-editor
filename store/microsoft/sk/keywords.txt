@@ -1,7 +1,0 @@
-ZPL editor
-tvorba štítkov
-tlač štítkov
-generátor čiarových kódov
-tlačiareň štítkov
-termotlačiareň
-čiarový kód GS1
