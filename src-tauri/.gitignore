@@ -1,7 +1,0 @@
-/target/
-/gen/schemas
-
-# updater signing key, lives only in GH secrets
-.tauri-signing.key
-.tauri-signing.key.pub
-binaries

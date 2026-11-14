@@ -1,5 +1,0 @@
-ZPLab je bezplatný open-source nástroj pro navrhování etiket a editor ZPL kódu pro tiskárny kompatibilní se ZPL. Etikety lze vytisknout nebo exportovat jako ZPL, PDF nebo obrázek.
-
-Plátno zobrazuje etiketu přímo. Alternativní náhled může vykreslit síťová tiskárna nebo po udělení souhlasu externí služba Labelary.
-
-Účet se nevyžaduje. ZPLab podléhá licenci MIT.

@@ -1,7 +1,0 @@
-ZPL redaktorius
-etikečių kūrimas
-etikečių spausdinimas
-brūkšninių kodų generatorius
-terminis spausdintuvas
-etikečių spausdintuvas
-GS1 brūkšninis kodas

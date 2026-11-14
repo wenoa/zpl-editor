@@ -1,5 +1,0 @@
-O ZPLab é um criador de etiquetas e editor de ZPL gratuito e de código aberto para impressoras compatíveis com ZPL. As etiquetas podem ser impressas ou exportadas como arquivos ZPL, PDF ou imagem.
-
-A tela mostra a etiqueta diretamente. Uma pré-visualização alternativa pode ser gerada por uma impressora de rede ou, mediante consentimento, pelo Labelary, um serviço de terceiros.
-
-Não requer conta. O ZPLab é distribuído sob a licença MIT.

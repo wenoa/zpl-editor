@@ -1,7 +1,0 @@
-ZPL redaktors
-etiķešu dizaina programma
-etiķešu veidošana
-svītrkodu ģenerators
-etiķešu printeris
-termoprinteris
-GS1 svītrkods

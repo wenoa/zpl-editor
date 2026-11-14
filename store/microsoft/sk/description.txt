@@ -1,5 +1,0 @@
-ZPLab je bezplatný open-source nástroj na navrhovanie štítkov a editor ZPL pre tlačiarne kompatibilné so ZPL. Štítky možno vytlačiť alebo exportovať ako súbor ZPL, PDF či obrázok.
-
-Plátno zobrazuje štítok priamo. Alternatívny náhľad môže vykresliť sieťová tlačiareň alebo po udelení súhlasu externá služba Labelary.
-
-Účet sa nevyžaduje. ZPLab má licenciu MIT.
