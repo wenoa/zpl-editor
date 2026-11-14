@@ -252,7 +252,8 @@ export function AppShell() {
       {/* Header: web only; the desktop build has no header row. */}
       {!isDesktopShell && (
         <header className="h-11 shrink-0 flex items-center justify-between px-4 border-b border-border bg-surface-2">
-          <div className="flex items-center gap-3">
+          {/* Embedded, the application names the label and the format panel shows its size. */}
+          {isEmbedded ? <div /> : <div className="flex items-center gap-3">
             <button
               onClick={() => selectObject(null)}
               className="text-accent font-semibold tracking-tight text-sm hover:opacity-75 transition-opacity"
@@ -263,7 +264,7 @@ export function AppShell() {
             <span className="font-mono text-xs text-muted">
               {mmToUnit(label.widthMm, unit)} × {mmToUnit(label.heightMm, unit)} {unit} · {label.dpmm} dpmm
             </span>
-          </div>
+          </div>}
 
           <div className="flex items-center gap-1">
             {isEmbedded ? (
@@ -481,9 +482,9 @@ export function AppShell() {
             <div className="shrink-0 flex border-b border-border bg-surface">
               <PaneToggle side="left" open title={t.app.collapse} onToggle={leftPanel.collapse} />
               <div className="flex flex-1 items-center px-2">
-                <PaletteEditToggle />
+                {!isEmbedded && <PaletteEditToggle />}
               </div>
-              <PaletteViewToggle />
+              {!isEmbedded && <PaletteViewToggle />}
             </div>
             <ObjectPalette />
           </aside>

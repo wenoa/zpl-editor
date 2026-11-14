@@ -14,7 +14,7 @@ import { CANVAS_DROPPABLE_ID } from "../../dnd/types";
 import { paletteGhostHandlers } from "./paletteGhostMonitor";
 import { Stage, Layer, Group, Image as KImage, Rect, Transformer } from "react-konva";
 import type Konva from "konva";
-import { useLabelStore, currentObjects, currentPageLabel, getCurrentObjects, selectEditorFrozen, selectPreviewLocksEditor, selectRenderPageLabel, selectRenderObjects, selectRenderColumnMapping, selectRenderDataset } from "../../store/labelStore";
+import { useLabelStore, currentObjects, currentPageLabel, getCurrentObjects, selectEditorFrozen, selectPreviewLocksEditor, selectRenderPageLabel, selectRenderObjects, selectRenderColumnMapping, selectRenderDataset, isEmbedded } from "../../store/labelStore";
 import { isGroup, getAllLeaves, exportableLeaves, expandSelection, selectionTargetId, findObjectById, canDeleteSelection, canGroupSelection, canUngroupSelection, hasLockedAncestor, isSelectionLocked, visibleLeaves, type LabelObject } from "@zplab/core/types/Group";
 import { pxToDots, dotsToPx, mmToDots, SCREEN_PX_PER_MM } from "@zplab/core/lib/coordinates";
 import { effectiveDpmm } from "@zplab/core/types/LabelConfig";
@@ -1257,7 +1257,8 @@ export const LabelCanvas = forwardRef<LabelCanvasHandle, Props>(function LabelCa
     // Add-here mirrors the palette: the curated quick list first, then the
     // registry groups in palette order, presets included. Empty groups drop out.
     const toAddable = (e: AddableEntry) => ({ id: e.id, type: e.type, label: e.label, propsOverride: e.propsOverride });
-    const quickTypes = paletteRows
+    // An embedded editor offers no favorites.
+    const quickTypes = (isEmbedded ? [] : paletteRows)
       .map((r) => resolveAddable(r.entryId, t))
       .filter((e): e is AddableEntry => e !== null)
       .map(toAddable);

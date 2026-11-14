@@ -6,8 +6,8 @@ export interface PaletteRowMenuCtx {
   labels: { addToLabel: string; pinToFavorites: string; unpinFromFavorites: string };
   dispatch: {
     addToLabel: () => void;
-    /** Adds or removes the favorites row for this entry (one row per entry). */
-    togglePin: () => void;
+    /** Adds or removes the favorites row for this entry (one row per entry); no pin item without it. */
+    togglePin?: () => void;
   };
 }
 
@@ -18,11 +18,15 @@ export function buildPaletteRowMenu(ctx: PaletteRowMenuCtx): MenuSection[] {
       id: "row",
       items: [
         { id: "addToLabel", label: ctx.labels.addToLabel, run: ctx.dispatch.addToLabel },
-        {
-          id: "togglePin",
-          label: ctx.pinned ? ctx.labels.unpinFromFavorites : ctx.labels.pinToFavorites,
-          run: ctx.dispatch.togglePin,
-        },
+        ...(ctx.dispatch.togglePin === undefined
+          ? []
+          : [
+              {
+                id: "togglePin",
+                label: ctx.pinned ? ctx.labels.unpinFromFavorites : ctx.labels.pinToFavorites,
+                run: ctx.dispatch.togglePin,
+              },
+            ]),
       ],
     },
   ];

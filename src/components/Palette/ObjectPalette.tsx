@@ -10,7 +10,7 @@ import { useContextMenu } from '../../hooks/useContextMenu';
 import { resolveAddable, typeLabelFor, type AddableEntry } from '../../registry/palettePresets';
 import { getEntry } from '@zplab/core/registry';
 import { useT } from '../../hooks/useT';
-import { useLabelStore, currentPageLabel, selectEditorFrozen } from '../../store/labelStore';
+import { useLabelStore, currentPageLabel, selectEditorFrozen, isEmbedded } from '../../store/labelStore';
 import { printableRectDots } from '@zplab/core/lib/objectBounds';
 import { centeredSpawnAnchor } from '../../lib/spawn';
 import { DragHandleIcon } from '../ui/DragHandleIcon';
@@ -207,7 +207,8 @@ export function ObjectPalette() {
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const rows = useLabelStore((s) => s.paletteRows);
-  const view = useLabelStore((s) => s.paletteView);
+  // An embedded editor offers no favorites: the palette always browses flat.
+  const view = useLabelStore((s) => (isEmbedded ? 'flat' : s.paletteView));
   const editing = useLabelStore((s) => s.paletteEditing);
   const toggleRow = useLabelStore((s) => s.togglePaletteRow);
   const reorderRows = useLabelStore((s) => s.reorderPaletteRows);
@@ -230,7 +231,7 @@ export function ObjectPalette() {
       },
       dispatch: {
         addToLabel: () => spawnCentered(entry),
-        togglePin: () => toggleRow(entry.id),
+        togglePin: isEmbedded ? undefined : () => toggleRow(entry.id),
       },
     });
     openAtPointer(e, sections);
@@ -309,7 +310,7 @@ export function ObjectPalette() {
               <p className="px-1 pb-0.5 font-mono text-[9px] text-muted">{t.palette.resultsFmt.replace('{n}', String(resultCount))}</p>
               {flatGroups.flatMap(({ key, entries }) =>
                 entries.map((e) => (
-                  <BrowseRow key={`${key}-${e.id}`} entry={e} dragId={`search-${key}-${e.id}`} cat={entryCategory(e, t)} pinnable onOpenMenu={openRowMenu} />
+                  <BrowseRow key={`${key}-${e.id}`} entry={e} dragId={`search-${key}-${e.id}`} cat={entryCategory(e, t)} pinnable={!isEmbedded} onOpenMenu={openRowMenu} />
                 )),
               )}
             </div>

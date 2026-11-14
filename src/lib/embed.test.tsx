@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { DndContext } from "@dnd-kit/core";
 import { getEntry } from "@zplab/core/registry";
 import type { LabelObject } from "@zplab/core/types/Group";
 import {
@@ -21,6 +22,7 @@ import { useLabelStore } from "../store/labelStore";
 import { RightSidebar } from "../components/RightSidebar/RightSidebar";
 import { EmbedNotice, EmbedSaveButton } from "../components/EmbedSave";
 import { addableGroupsFor } from "../components/Palette/paletteGroups";
+import { ObjectPalette } from "../components/Palette/ObjectPalette";
 import type { LabelCanvasHandle } from "../components/Canvas/LabelCanvas";
 
 // The store reads both as it loads: built as <zplab-editor>, next to a session this origin keeps.
@@ -270,11 +272,34 @@ describe("an embedded editor", () => {
     ]);
   });
 
-  it("leaves the label's settings to the application, size included", () => {
-    sidebar();
+  it("shows the label's size and density, which only the application changes", () => {
+    const { container } = sidebar();
 
-    expect(screen.queryByText(store().translations.label.formatSection)).toBeNull();
-    expect(screen.queryAllByText(store().translations.label.width, { exact: false })).toHaveLength(0);
+    expect(screen.getByText(store().translations.label.formatSection)).toBeTruthy();
+    expect(screen.getByText("60 × 40 mm")).toBeTruthy();
+    expect(screen.getByText("203 dpi")).toBeTruthy();
+    expect(container.querySelectorAll("[role=tabpanel] input, [role=tabpanel] select, [role=tabpanel] button")).toHaveLength(0);
+  });
+
+  it("offers no favorites", () => {
+    act(() => useLabelStore.setState({ paletteView: "favorites" }));
+    render(
+      <DndContext>
+        <ObjectPalette />
+      </DndContext>,
+    );
+    const { palette } = store().translations;
+
+    const favorites = [palette.pinToFavorites, palette.unpinFromFavorites];
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "QR" } });
+    expect(favorites.flatMap((name) => screen.queryAllByRole("button", { name }))).toHaveLength(0);
+    fireEvent.contextMenu(screen.getByText("QR Code"));
+    expect(favorites.flatMap((name) => screen.queryAllByText(name))).toHaveLength(0);
+    expect(screen.getByText(palette.addToLabel)).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
+    expect(screen.getAllByText("Code 128").length).toBeGreaterThan(0);
   });
 
   it("keeps the application's variables as they are named, and adds none", () => {

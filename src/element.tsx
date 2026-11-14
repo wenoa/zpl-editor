@@ -10,7 +10,6 @@ import App from "./App";
 import { useLabelStore } from "./store/labelStore";
 import { initFootprintMeasurer } from "./lib/footprintMeasurer";
 import { setShadowMount } from "./lib/dom";
-import { offered } from "./components/Palette/paletteGroups";
 import {
   openLabel,
   requireVariables,
@@ -46,8 +45,6 @@ const LOCALE_BOOT_WAIT_MS = 250;
 const FONTS = [plexSans400, plexSans500, plexSans600, plexMono400, plexMono500, plexMono600];
 
 initFootprintMeasurer();
-// Code 128 and QR are the only barcodes on offer, the default favorites included.
-useLabelStore.setState((s) => ({ paletteRows: s.paletteRows.filter(({ entryId }) => offered(entryId)) }));
 
 class ZplabEditor extends HTMLElement {
   /** Undefined until the application gives it, which refuses to open. */

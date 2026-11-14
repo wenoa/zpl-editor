@@ -183,9 +183,8 @@ export function PropertiesPanel({ canvasRef }: PropertiesPanelProps) {
     );
   }
 
-  // The application gives the label's size, and the header shows it.
   if (!obj) {
-    if (isEmbedded) return null;
+    if (isEmbedded) return <LabelFormatSummary label={designLabel} />;
     return (
       <LabelConfigPanel
         label={designLabel}
@@ -466,6 +465,39 @@ const PRESETS: Preset[] = [
   { label: "DIN A5 (148 × 210 mm)", widthMm: 148, heightMm: 210, dpmm: 8 },
   { label: "DIN A4 (210 × 297 mm)", widthMm: 210, heightMm: 297, dpmm: 8 },
 ];
+
+// ── LabelFormatSummary ─────────────────────────────────────────────────────────
+
+/** Dots per inch of each Zebra printhead density, keyed by dots per millimetre. */
+const DPI_AT_DPMM: Readonly<Record<number, number>> = { 6: 152, 8: 203, 12: 300, 24: 600 };
+
+/** The label's size and density, which the application that embeds the editor gives. */
+function LabelFormatSummary({ label }: { label: LabelConfig }) {
+  const t = useT();
+  const rows = [
+    [`${t.label.width} × ${t.label.height}`, `${label.widthMm} × ${label.heightMm} mm`],
+    [t.label.dpmm, `${DPI_AT_DPMM[label.dpmm] ?? Math.round(label.dpmm * 25.4)} dpi`],
+  ];
+  return (
+    <div className="flex flex-col">
+      <div className="px-3 py-2.5 border-b border-border">
+        <span className="text-xs font-medium text-text">{t.label.heading}</span>
+      </div>
+      <div className="p-2 flex flex-col gap-2">
+        <StaticSectionCard title={t.label.formatSection}>
+          <dl className="flex flex-col gap-1.5">
+            {rows.map(([term, value]) => (
+              <div key={term} className="flex items-center justify-between gap-2">
+                <dt className={labelCls}>{term}</dt>
+                <dd className="font-mono text-xs text-text">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </StaticSectionCard>
+      </div>
+    </div>
+  );
+}
 
 // ── LabelConfigPanel ───────────────────────────────────────────────────────────
 
