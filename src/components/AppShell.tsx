@@ -475,17 +475,20 @@ export function AppShell() {
       {/* Main area: 3 columns */}
       <DndContext sensors={sensors} collisionDetection={collisionDetection}>
       <div ref={mainRowRef} className="flex flex-1 min-h-0 overflow-hidden">
-        {leftPanel.collapsed ? (
+        {/* Embedded, both sidebars stay in view: the palette has no favorites to switch to. */}
+        {leftPanel.collapsed && !isEmbedded ? (
           <PaneToggle side="left" open={false} title={t.app.expand} onToggle={leftPanel.expand} />
         ) : (
           <aside className="w-56 shrink-0 border-r border-border bg-surface flex flex-col min-h-0">
-            <div className="shrink-0 flex border-b border-border bg-surface">
-              <PaneToggle side="left" open title={t.app.collapse} onToggle={leftPanel.collapse} />
-              <div className="flex flex-1 items-center px-2">
-                {!isEmbedded && <PaletteEditToggle />}
+            {!isEmbedded && (
+              <div className="shrink-0 flex border-b border-border bg-surface">
+                <PaneToggle side="left" open title={t.app.collapse} onToggle={leftPanel.collapse} />
+                <div className="flex flex-1 items-center px-2">
+                  <PaletteEditToggle />
+                </div>
+                <PaletteViewToggle />
               </div>
-              {!isEmbedded && <PaletteViewToggle />}
-            </div>
+            )}
             <ObjectPalette />
           </aside>
         )}
@@ -508,7 +511,9 @@ export function AppShell() {
           />
         </main>
 
-        {rightPanel.collapsed ? (
+        {isEmbedded ? (
+          <RightSidebar canvasRef={canvasRef} />
+        ) : rightPanel.collapsed ? (
           <PaneToggle side="right" open={false} title={t.app.expand} onToggle={rightPanel.expand} />
         ) : (
           <RightSidebar canvasRef={canvasRef} onCollapse={rightPanel.collapse} />
