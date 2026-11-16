@@ -1,5 +1,0 @@
-ZPLab, ZPL uyumlu yazıcılar için ücretsiz ve açık kaynaklı bir etiket tasarım programı ve ZPL düzenleyicisidir. Etiketler yazdırılabilir veya ZPL, PDF ya da görsel dosyası olarak dışa aktarılabilir.
-
-Tuval, etiketi doğrudan gösterir. Alternatif bir önizleme, bir ağ yazıcısından ya da onay verildiğinde üçüncü taraf Labelary hizmetinden alınabilir.
-
-Hesap gerekmez. ZPLab MIT lisanslıdır.

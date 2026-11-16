@@ -1,7 +1,0 @@
-ZPL düzenleyici
-etiket tasarım programı
-etiket oluşturucu
-barkod oluşturucu
-etiket yazıcı
-termal yazıcı
-GS1 barkod
