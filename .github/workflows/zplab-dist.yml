@@ -2,7 +2,8 @@ name: zplab dist
 
 # Every push to web-component that changes what goes into <zplab-editor> builds it into its own
 # branch, release/<short commit hash>: one commit on top of the built one, holding only the package.
-# An app installs a build with "@wenoa/zplab": "github:wenoa/zpl-editor#release/<short commit hash>".
+# An app installs a build as a tarball, without git:
+# "@wenoa/zplab": "https://codeload.github.com/wenoa/zpl-editor/tar.gz/refs/heads/release/<short commit hash>".
 on:
   push:
     branches: [web-component]
