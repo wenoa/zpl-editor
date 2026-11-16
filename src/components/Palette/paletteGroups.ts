@@ -18,8 +18,12 @@ const BARCODE_GROUPS: ReadonlySet<ObjectGroup> = new Set(['code-1d', 'code-2d', 
 /** Code 128 and QR are the only barcodes <zplab-editor> offers. `id` names a preset of `type`. */
 const OFFERED_BARCODES: ReadonlySet<string> = new Set(['code128', 'qrcode']);
 
+/** Presets <zplab-editor> leaves out: the application numbers its labels itself. */
+const WITHHELD: ReadonlySet<string> = new Set(['text-serial']);
+
 export const offered = (type: string, id: string = type): boolean =>
-  !isEmbedded || OFFERED_BARCODES.has(id) || !BARCODE_GROUPS.has(getEntry(type)?.group as ObjectGroup);
+  !isEmbedded ||
+  (!WITHHELD.has(id) && (OFFERED_BARCODES.has(id) || !BARCODE_GROUPS.has(getEntry(type)?.group as ObjectGroup)));
 
 /** Single source for the palette groups; each consumer maps entries onto its
  *  own shape (flat browse, canvas add-here, favorites add). */

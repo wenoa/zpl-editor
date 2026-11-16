@@ -272,6 +272,13 @@ describe("an embedded editor", () => {
     ]);
   });
 
+  it("offers no serial counter", () => {
+    const ids = addableGroupsFor(store().translations).flatMap(({ entries }) => entries.map(({ id }) => id));
+
+    expect(ids).toContain("text");
+    expect(ids).not.toContain("text-serial");
+  });
+
   it("shows the label's size and density, which only the application changes", () => {
     const { container } = sidebar();
 
