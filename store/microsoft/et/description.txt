@@ -1,5 +1,0 @@
-ZPLab on tasuta avatud lähtekoodiga rakendus etikettide kujundamiseks ja ZPL-i redigeerimiseks ZPL-ühilduvatele printeritele. Etiketid saab printida või eksportida ZPL-, PDF- või pildifailina.
-
-Lõuend kuvab etiketti otse. Alternatiivse eelvaate saab renderdada võrguprinter või nõusoleku korral kolmanda osapoole teenus Labelary.
-
-Kontot pole vaja. ZPLab on MIT-litsentsiga.
