@@ -26,8 +26,14 @@ export interface LabelSize {
   heightMm: number;
 }
 
-/** The densities of Zebra printheads, in dots per millimetre. */
-const DOTS_PER_MM_AT_DPI: Readonly<Record<number, number>> = { 152: 6, 203: 8, 300: 12, 600: 24 };
+/** Zebra names its heads' whole dots per millimetre by a rounded dpi: a 203 dpi head prints 8 dots/mm. */
+const DOTS_PER_MM_AT_ZEBRA_DPI: Readonly<Record<number, number>> = { 152: 6, 203: 8, 300: 12, 600: 24 };
+
+/** Dots per millimetre of a head of `dpi`, or undefined when no head has that density. */
+function dotsPerMm(dpi: number | undefined) {
+  if (dpi === undefined || !Number.isInteger(dpi) || dpi <= 0) return undefined;
+  return DOTS_PER_MM_AT_ZEBRA_DPI[dpi] ?? dpi / 25.4;
+}
 
 /** What a save hands the application. */
 export interface EmbedLabel {
@@ -98,8 +104,8 @@ export function openLabel(
   const invalid = invalidVariable(variables);
   if (invalid !== undefined) return refused({ code: "variables", message: `El nombre de variable "${invalid}" no es válido.` });
   if (!isValidSize(size)) return refused(INVALID_SIZE);
-  const dpmm = dpi === undefined ? undefined : DOTS_PER_MM_AT_DPI[dpi];
-  if (dpmm === undefined) return refused({ code: "dpi", message: "La densidad tiene que ser 152, 203, 300 o 600 dpi." });
+  const dpmm = dotsPerMm(dpi);
+  if (dpmm === undefined) return refused({ code: "dpi", message: "La densidad tiene que ser un número entero de dpi mayor a cero." });
   const store = useLabelStore.getState();
   const fixed = { ...labelMetaOf(store.label), dpmm, ...sizeOf(size) };
   if (zpl.trim() === "") {

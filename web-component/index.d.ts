@@ -33,7 +33,11 @@ export interface ZplabEditorElement extends HTMLElement {
   zpl: string;
   /** Required: without a valid size the label does not open. It can change while the label is open. */
   size: ZplabSize | null | undefined;
-  /** Required: 152, 203, 300 or 600. The label is designed at this density, which the user cannot change. */
+  /**
+   * Required: the printer's density in dpi, a whole number above zero. The label is designed at this
+   * density, which the user cannot change. 152, 203, 300 and 600 are Zebra's 6, 8, 12 and 24 dots/mm;
+   * any other density is dpi / 25.4 dots/mm.
+   */
   dpi: number | null | undefined;
   /** The variables the application fills by name. */
   variables: readonly ZplabVariable[] | null | undefined;

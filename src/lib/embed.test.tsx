@@ -114,6 +114,18 @@ describe("the application opens a label", () => {
     expect(store().label).toMatchObject({ widthMm: 60, heightMm: 40, dpmm: 12 });
   });
 
+  it("opens at any whole density the printer has, and hands the label back at it", async () => {
+    expect(openLabel(SAVED, [], SIZE, 250)).toBeUndefined();
+
+    saveLabel();
+    await settled();
+
+    const { zpl } = received(0).label;
+    expect(zpl).toBe("^XA\n^PW591\n^LL394\n^CI28\n^FO10,15^A0N,30,0^FH_^FDCliente: {{customer:FD}}^FS\n^XZ");
+    openLabel(zpl, [], SIZE, 250);
+    expect(showsZpl(zpl)).toBe(true);
+  });
+
   it("gives a token the application's default", () => {
     openLabel(SAVED, [{ name: "customer", defaultValue: "ACME" }, { name: "lot", defaultValue: "«L-1»" }], SIZE, DPI);
 
@@ -139,7 +151,11 @@ describe("the application opens a label", () => {
     ["size", SAVED, { widthMm: 0, heightMm: 40 }, DPI, []],
     ["size", SAVED, { widthMm: Number.NaN, heightMm: 40 }, DPI, []],
     ["dpi", SAVED, SIZE, undefined, []],
-    ["dpi", SAVED, SIZE, 250, []],
+    ["dpi", SAVED, SIZE, 0, []],
+    ["dpi", SAVED, SIZE, -203, []],
+    ["dpi", SAVED, SIZE, 250.5, []],
+    ["dpi", SAVED, SIZE, Number.NaN, []],
+    ["dpi", SAVED, SIZE, Number.POSITIVE_INFINITY, []],
     ["variables", SAVED, SIZE, DPI, [{ name: "a«b" }]],
     ["variables", SAVED, SIZE, DPI, [{ name: "código cliente" }]],
     ["variables", SAVED, SIZE, DPI, [{ name: "a}b" }]],
@@ -286,6 +302,14 @@ describe("an embedded editor", () => {
     expect(screen.getByText("60 × 40 mm")).toBeTruthy();
     expect(screen.getByText("203 dpi")).toBeTruthy();
     expect(container.querySelectorAll("[role=tabpanel] input, [role=tabpanel] select, [role=tabpanel] button")).toHaveLength(0);
+  });
+
+  it("shows a density no Zebra head has as the application gave it", () => {
+    openLabel("", [], SIZE, 250);
+
+    sidebar();
+
+    expect(screen.getByText("250 dpi")).toBeTruthy();
   });
 
   it("offers no favorites", () => {

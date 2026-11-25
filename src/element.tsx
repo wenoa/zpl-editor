@@ -28,7 +28,7 @@ import {
  *
  *   zpl          property  the label's ZPL as a save handed it over, "" for a new label
  *   size         property  { widthMm, heightMm }, the label's size: required, it can change while the label is open
- *   dpi          property  152, 203, 300 or 600: the density the label is designed at, required
+ *   dpi          property  a whole number above zero: the printer's density the label is designed at, required
  *   variables    property  [{ name, defaultValue? }], the variables the application fills by name
  *   theme        property  "light" (default) or "dark"
  *   saveHandler  property  (label: { zpl }) => Promise: the ZPL prints at the size and the density, each
